@@ -175,3 +175,48 @@ LOGGING = {
         },
     }
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv("REDIS_BROKER_URL"),
+        'TIMEOUT': 60 * 60 * 24,  # 24 hours
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor'
+        }
+    },
+}
+
+REDIS = {
+    'default': (
+        os.getenv("REDIS_HOST"),
+        os.getenv("REDIS_PORT"),
+        os.getenv("REDIS_DB"),
+    ),
+    'livecache': (
+        os.getenv("REDIS_LIVECACHE_HOST"),
+        os.getenv("REDIS_LIVECACHE_PORT"),
+        os.getenv("REDIS_LIVECACHE_DB"),
+    ),
+}
+
+REDIS_CLUSTER_ENABLED = False
+REDIS_CLUSTER_NODES = [
+    {
+        "host": os.getenv("REDIS_CLUSTER_HOST"),
+        "port": os.getenv("REDIS_CLUSTER_PORT")
+    },
+]
+
+ELASTIC_APM = {
+  # Set required service name. Allowed characters:
+  # a-z, A-Z, 0-9, -, _, and space
+  'SERVICE_NAME': '',
+
+  # Use if APM Server requires a token
+  'SECRET_TOKEN': '',
+
+  # Set custom APM Server URL (default: http://localhost:8200)
+  'SERVER_URL': '',
+}

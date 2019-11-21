@@ -33,7 +33,6 @@ ALLOWED_HOSTS = [os.getenv("ALLOWED_HOSTS")]
 DEBUG_STATES = ("TEST", "DEV")
 DEBUG = APP_ENV in DEBUG_STATES
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -46,6 +45,10 @@ INSTALLED_APPS = [
 
     'raven.contrib.django.raven_compat',
     'elasticapm.contrib.django',
+    'rest_framework',
+
+    'musicwire.spotify',
+    'musicwire.core'
 ]
 
 MIDDLEWARE = [
@@ -78,7 +81,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'musicwire.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database

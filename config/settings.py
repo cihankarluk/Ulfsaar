@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'raven.contrib.django.raven_compat',
+    'elasticapm.contrib.django',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +56,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'elasticapm.contrib.django.middleware.TracingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -148,6 +152,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
+        'elasticapm': {
+            'level': 'INFO',
+            'class': 'elasticapm.contrib.django.handlers.LoggingHandler',
+        },
         'sentry': {
             'level': 'INFO',
             'class': 'raven.handlers.logging.SentryHandler',
@@ -156,7 +164,7 @@ LOGGING = {
     },
     'loggers': {
         'main': {
-            'handlers': ['log_to_stdout'],
+            'handlers': ['log_to_stdout', 'elasticapm'],
             'level': 'INFO',
             'propagate': True,
         },

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from musicwire.spotify import views
+from musicwire.provider.spotify import views
 
 urlpatterns = [
     path('saved_tracks',

@@ -9,12 +9,12 @@ class Client:
     def __init__(self, *args, **kwargs):
         self.base_url = kwargs['base_url']
         self.token = kwargs['token']
+        self.end_point = kwargs['end_point']
 
     @request_validator
-    def make_request(self, end_point=None, method='GET'):
+    def make_request(self, params, method='GET'):
         token = self.token
-        url = urllib.parse.urljoin(self.base_url, end_point)
-        params = {'limit': 50}
+        url = urllib.parse.urljoin(self.base_url, self.end_point)
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',

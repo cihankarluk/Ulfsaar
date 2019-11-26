@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from musicwire.spotify.models import Spotify
+from musicwire.provider.spotify.models import Spotify
 
 
 class SpotifyAdmin(admin.ModelAdmin):

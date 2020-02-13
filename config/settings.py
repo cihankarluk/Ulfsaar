@@ -33,7 +33,6 @@ ALLOWED_HOSTS = [os.getenv("ALLOWED_HOSTS")]
 DEBUG_STATES = ("TEST", "DEV")
 DEBUG = APP_ENV in DEBUG_STATES
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,9 +42,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
 
     'raven.contrib.django.raven_compat',
     'elasticapm.contrib.django',
+    'rest_framework',
+
+    'musicwire.provider',
+    'musicwire.provider.spotify',
+    'musicwire.core'
 ]
 
 MIDDLEWARE = [
@@ -78,7 +83,12 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'musicwire.wsgi.application'
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 100
+}
+
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database

@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class SpotifyConfig(AppConfig):
-    name = 'musicwire.spotify'
+    name = 'musicwire.provider.spotify'

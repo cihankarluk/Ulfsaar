@@ -3,7 +3,7 @@ from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
-from musicwire.core.exceptions import ValidationError, AddTracksError
+from musicwire.core.exceptions import AddTracksError, ValidationError
 from musicwire.provider.clients.spotify import Client
 
 logger = logging.getLogger(__name__)

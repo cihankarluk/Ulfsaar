@@ -1,5 +1,3 @@
-import json
-
 from django.conf import settings
 from raven import Client
 import logging
@@ -13,7 +11,6 @@ logger = logging.getLogger(__name__)
 def request_validator(func):
     @wraps(func)
     def aux(*args, **kwargs):
-        response_data = None
         try:
             response = func(*args, **kwargs)
         except (exceptions.ReadTimeoutError,
@@ -22,12 +19,11 @@ def request_validator(func):
                 requests_exceptions.ConnectionError) as e:
             logging.error(f"Connection error as {e}")
             return
-        if response:
-            try:
-                response_data = response.json()
-            except (json.decoder.JSONDecodeError, AttributeError) as e:
-                logger.error(f"Error while converting json as error: {e}")
-                return
+        if response and response.ok:
+            response_data = response.json()
+        else:
+            logger.error(f"Response error: {response.text}")
+            return
         return response_data
     return aux
 

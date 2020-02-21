@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'musicwire.provider',
-    'musicwire.provider.spotify',
     'musicwire.core'
 ]
 

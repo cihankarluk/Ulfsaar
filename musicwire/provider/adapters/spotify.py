@@ -39,7 +39,7 @@ class Adapter:
 
     def collector(
             self, fn: Callable, limit: int, offset: int, **kwargs
-    ) -> Optional[List]:
+    ) -> list:
         """
         Iterate through all pages and return list of results.
         """
@@ -57,7 +57,7 @@ class Adapter:
         # TODO: Might concatenate this response with thread responses to avoid
         #  redundant request
         if not response:
-            return None
+            return []
 
         total_pages = int(response.get('total') / limit) + 1
 
@@ -66,13 +66,9 @@ class Adapter:
 
         return self.collect_concurrently(fn, request_data, fn.__name__)
 
-    def saved_tracks(self, limit=50, offset=0) -> Optional[List]:
-        """
-        Get saved tracks of user.
-        """
+    @staticmethod
+    def get_saved_tracks(tracks: List[dict]) -> List[dict]:
         saved_tracks = []
-
-        tracks = self.collector(self.spotify_client.get_saved_tracks, limit, offset)
 
         for item in tracks:
             for track in item['items']:
@@ -85,7 +81,16 @@ class Adapter:
                     'track_uri': track['uri']
                 }
                 saved_tracks.append(music_data)
+
         return saved_tracks
+
+    def saved_tracks(self, limit=50, offset=0) -> Optional[List]:
+        """
+        Get saved tracks of user.
+        """
+        tracks = self.collector(self.spotify_client.get_saved_tracks, limit, offset)
+
+        return self.get_saved_tracks(tracks)
 
     def playlists(self, limit=50, offset=0) -> Optional[List]:
         """
@@ -129,29 +134,17 @@ class Adapter:
         """
         Get a playlist's tracks.
         """
-        user_playlist_tracks = []
         data = {'playlist_id': playlist_id}
 
         tracks = self.collector(self.spotify_client.get_playlist_tracks,
                                 limit, offset, **data)
-        for item in tracks:
-            for track in item['items']:
-                track = track['track']
-                track_data = {
-                    'track_id': track['id'],
-                    'track_album_name': track['album']['name'],
-                    'track_name': track['name'],
-                    'track_artist': track['artists'][0]['name'],
-                    'track_uri': track['uri']
-                }
-                user_playlist_tracks.append(track_data)
-        return user_playlist_tracks
+
+        return self.get_saved_tracks(tracks)
 
     def create_playlist(self, user_id: str, **kwargs) -> Optional[dict]:
         """
         Post a new playlist in user account.
         """
-
         request_data = {
             "name": kwargs['name'],
             "public": kwargs.get('public'),
@@ -180,7 +173,7 @@ class Adapter:
         divide into chunks to add all tracks as supposed to.
         """
         tracks = kwargs['tracks']
-        chunks = [tracks[index:index+75] for index in range(0, len(tracks), 75)]
+        chunks = [tracks[index:index + 75] for index in range(0, len(tracks), 75)]
         for chunk in chunks:
             request_data = {'uris': chunk}
             response = self.spotify_client.add_tracks_to_playlist(playlist_id,

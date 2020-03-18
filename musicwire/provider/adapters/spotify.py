@@ -3,7 +3,7 @@ from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
-from musicwire.core.exceptions import AddTracksError, ValidationError
+from musicwire.core.exceptions import ValidationError
 from musicwire.provider.clients.spotify import Client
 
 logger = logging.getLogger(__name__)
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 class Adapter:
     _executor = ThreadPoolExecutor(max_workers=4)
 
-    def __init__(self, **kwargs):
+    def __init__(self, token):
         req_data = {
             'base_url': "https://api.spotify.com/v1/",
-            'token': kwargs['token'],
+            'token': token,
         }
         self.spotify_client = Client(**req_data)
 
@@ -73,14 +73,14 @@ class Adapter:
         for item in tracks:
             for track in item['items']:
                 track = track['track']
-                music_data = {
+                track_data = {
                     'track_id': track['id'],
                     'track_album_name': track['album']['name'],
                     'track_name': track['name'],
                     'track_artist': track['artists'][0]['name'],
                     'track_uri': track['uri']
                 }
-                saved_tracks.append(music_data)
+                saved_tracks.append(track_data)
 
         return saved_tracks
 
@@ -100,12 +100,14 @@ class Adapter:
 
         playlists = self.collector(self.spotify_client.get_playlists, limit, offset)
 
+        # TODO: check if first loop necessary
         for item in playlists:
             for playlist in item['items']:
+                # TODO: might use dataclass for keep whole thing under control.
                 playlist_data = {
                     'playlist_id': playlist['id'],
                     'playlist_name': playlist['name'],
-                    'playlist_public': playlist['public'],
+                    'playlist_status': playlist['public'],
                     'playlist_uri': playlist['uri']
                 }
                 user_playlists.append(playlist_data)
@@ -147,7 +149,7 @@ class Adapter:
         """
         request_data = {
             "name": kwargs['name'],
-            "public": kwargs.get('public'),
+            "public": kwargs.get('privacy_status'),
             "collaborative": kwargs.get('collaborative'),
             "description": kwargs.get('description')
         }
@@ -158,36 +160,41 @@ class Adapter:
 
         user_new_playlist = {
             "playlist_id": response['id'],
-            "playlist_collaborative": response['collaborative'],
+            "playlist_collaborative": response['collaborative'],  # Need to control this
             "playlist_description": response['description'],
             "playlist_name": response['name'],
-            "playlist_public": response['public'],
+            "playlist_status": response['public'],
             "playlist_uri": response['uri']
         }
         return user_new_playlist
 
-    def add_tracks_to_playlist(self, playlist_id: str, **kwargs) -> bool:
+    def add_tracks_to_playlist(self, playlist_id: str, tracks: list) -> list:
         """
         Post tracks to given playlist. 100 tracks can be added in one time according to
         Spotify api. To avoid possible losses while adding tracks, set limit to 75 to
         divide into chunks to add all tracks as supposed to.
         """
-        tracks = kwargs['tracks']
+        fail_tracks = []
         chunks = [tracks[index:index + 75] for index in range(0, len(tracks), 75)]
+
         for chunk in chunks:
             request_data = {'uris': chunk}
             response = self.spotify_client.add_tracks_to_playlist(playlist_id,
                                                                   request_data)
             if not response:
-                raise AddTracksError('Error while adding tracks into playlist.')
-        return True
+                fail_tracks.append(chunk)
+
+        if fail_tracks:
+            logger.info(f"Spotify insert track fail: {fail_tracks}")
+
+        return fail_tracks
 
     def upload_playlist_cover_image(self):
         raise NotImplemented()
 
     def search(self, request_data: dict) -> Optional[dict]:
         """
-        Search a album, track, artist in spotify to find track to later use in add
+        Search an album, track, artist in spotify to find track to later use in add
         playlist.
         """
         search_result = {}

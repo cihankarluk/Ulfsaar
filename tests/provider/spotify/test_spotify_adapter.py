@@ -196,7 +196,7 @@ class SpotifyAdapterTestCase(TestCase):
     def test_add_tracks_to_playlist(self):
         ...
 
-    def test_upload_playkist_cover_image(self):
+    def test_upload_playlist_cover_image(self):
         ...
 
     def test_search(self):

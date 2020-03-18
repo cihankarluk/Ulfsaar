@@ -13,12 +13,11 @@ class Client:
 
     @request_validator
     def make_request(self, end_point, params=None, data=None, method='GET'):
-        token = self.token
         url = urllib.parse.urljoin(self.base_url, end_point)
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': f'Bearer {token}'
+            'Authorization': f'Bearer {self.token}'
         }
         if method.lower() in ('get', 'delete'):
             return requests.request(method, url=url, headers=headers, params=params)
@@ -41,7 +40,7 @@ class Client:
         return self.make_request(end_point=end_point, params=request_data)
 
     def get_playlist_tracks(self, request_data):
-        # TODO: Bad practice to change data with pop.
+        # Bad practice to change data with pop.
         playlist_id = request_data.pop('playlist_id')
         end_point = f"playlists/{playlist_id}/tracks"
         return self.make_request(end_point=end_point, params=request_data)

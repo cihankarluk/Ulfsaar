@@ -4,6 +4,7 @@ import urllib.parse
 import requests
 
 from musicwire.core.helpers import request_validator
+from musicwire.provider.datastructures import ClientResult
 
 
 class Client:
@@ -11,7 +12,7 @@ class Client:
         self.base_url = kwargs['base_url']
         self.token = kwargs['token']
 
-    @request_validator
+    @request_validator  # type: ClientResult
     def make_request(self, end_point, params=None, data=None, method='GET'):
         url = urllib.parse.urljoin(self.base_url, end_point)
         headers = {
@@ -57,6 +58,6 @@ class Client:
         # TODO: Later can be implemented.
         raise NotImplemented()
 
-    def search(self, request_data):
+    def search(self, params):
         end_point = "search"
-        return self.make_request(end_point=end_point, params=request_data)
+        return self.make_request(end_point=end_point, params=params)

@@ -1,0 +1,2 @@
+class ProviderResponseError(Exception):
+    pass

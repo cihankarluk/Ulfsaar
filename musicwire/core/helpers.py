@@ -1,9 +1,11 @@
-from django.conf import settings
-from raven import Client
 import logging
 from functools import wraps
-from urllib3 import exceptions
+
+from django.conf import settings
+from raven import Client
 from requests import exceptions as requests_exceptions
+from urllib3 import exceptions
+
 
 logger = logging.getLogger(__name__)
 

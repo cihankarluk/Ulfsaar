@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'musicwire.provider',
-    'musicwire.core'
+    'musicwire.core',
+    'musicwire.transfer'
 ]
 
 MIDDLEWARE = [
@@ -202,12 +203,7 @@ REDIS = {
         os.getenv("REDIS_HOST"),
         os.getenv("REDIS_PORT"),
         os.getenv("REDIS_DB"),
-    ),
-    'livecache': (
-        os.getenv("REDIS_LIVECACHE_HOST"),
-        os.getenv("REDIS_LIVECACHE_PORT"),
-        os.getenv("REDIS_LIVECACHE_DB"),
-    ),
+    )
 }
 
 REDIS_CLUSTER_ENABLED = False
@@ -217,6 +213,8 @@ REDIS_CLUSTER_NODES = [
         "port": os.getenv("REDIS_CLUSTER_PORT")
     },
 ]
+
+TRACK_CACHE_TIME = 60 * 5  # 5 minutes
 
 ELASTIC_APM = {
   # Set required service name. Allowed characters:

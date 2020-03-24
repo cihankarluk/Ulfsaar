@@ -5,6 +5,7 @@ from typing import Callable, Iterable, List, Optional
 
 from musicwire.core.exceptions import ValidationError
 from musicwire.provider.clients.spotify import Client
+from musicwire.provider.datastructures import ClientResult
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,12 @@ class Adapter:
             'token': token,
         }
         self.spotify_client = Client(**req_data)
+
+    @staticmethod
+    def validate_response(response: ClientResult):
+        if response.error:
+            raise response.error_obj
+        return response.result
 
     def collect_concurrently(
             self, fn: Callable, collection: Iterable, title=None
@@ -132,89 +139,92 @@ class Adapter:
                 user_albums.append(album_data)
         return user_albums
 
-    def playlist_tracks(self, playlist_id: str, limit=50, offset=0) -> Optional[List]:
+    def playlist_tracks(self, playlist_id: str, limit=50, paging=0) -> Optional[List]:
         """
         Get a playlist's tracks.
         """
         data = {'playlist_id': playlist_id}
 
         tracks = self.collector(self.spotify_client.get_playlist_tracks,
-                                limit, offset, **data)
+                                limit, paging, **data)
 
         return self.get_saved_tracks(tracks)
 
-    def create_playlist(self, user_id: str, **kwargs) -> Optional[dict]:
+    def create_playlists(self, playlists: list) -> List[dict]:
         """
         Post a new playlist in user account.
         """
-        request_data = {
-            "name": kwargs['name'],
-            "public": kwargs.get('privacy_status'),
-            "collaborative": kwargs.get('collaborative'),
-            "description": kwargs.get('description')
-        }
+        created_playlists = []
+        user_id = playlists.pop()
 
-        response = self.spotify_client.create_a_playlist(user_id, request_data)
+        for playlist in playlists:
+            request_data = {
+                "name": playlist['playlist_name'],
+                "public": playlist.get('privacy_status'),
+                "collaborative": playlist.get('collaborative'),
+                "description": playlist.get('description')
+            }
+
+            response = self.spotify_client.create_a_playlist(user_id, request_data)
+            playlist_data = self.validate_response(response)
+
+            try:
+                created_playlists.append({
+                    "playlist_id": playlist_data['uri'],
+                    "playlist_collaborative": playlist_data['collaborative'],  # Need to control this
+                    "playlist_description": playlist_data['description'],
+                    "playlist_name": playlist_data['name'],
+                    "playlist_status": playlist_data['public'],
+                })
+                logger.info(f"Created: {playlist['playlist_name']}.")
+            except TypeError:
+                logger.info(f"Fail to create: {playlist['playlist_name']}.")
+
+        return created_playlists
+
+    def add_tracks_to_playlist(self, playlist_id: str, track: list):
+        """
+        Post tracks to given playlist.
+        """
+        request_data = {'uris': track}
+        response = self.spotify_client.add_tracks_to_playlist(
+            playlist_id, request_data
+        )
+        self.validate_response(response)
+
         if not response:
-            return
+            logger.info(f"Spotify insert track fail: {track}")
 
-        user_new_playlist = {
-            "playlist_id": response['id'],
-            "playlist_collaborative": response['collaborative'],  # Need to control this
-            "playlist_description": response['description'],
-            "playlist_name": response['name'],
-            "playlist_status": response['public'],
-            "playlist_uri": response['uri']
-        }
-        return user_new_playlist
-
-    def add_tracks_to_playlist(self, playlist_id: str, tracks: list) -> list:
-        """
-        Post tracks to given playlist. 100 tracks can be added in one time according to
-        Spotify api. To avoid possible losses while adding tracks, set limit to 75 to
-        divide into chunks to add all tracks as supposed to.
-        """
-        fail_tracks = []
-        chunks = [tracks[index:index + 75] for index in range(0, len(tracks), 75)]
-
-        for chunk in chunks:
-            request_data = {'uris': chunk}
-            response = self.spotify_client.add_tracks_to_playlist(playlist_id,
-                                                                  request_data)
-            if not response:
-                fail_tracks.append(chunk)
-
-        if fail_tracks:
-            logger.info(f"Spotify insert track fail: {fail_tracks}")
-
-        return fail_tracks
+        return
 
     def upload_playlist_cover_image(self):
         raise NotImplemented()
 
-    def search(self, request_data: dict) -> Optional[dict]:
+    def search(self, search_track: str, search_type: str = 'track') -> List[dict]:
         """
         Search an album, track, artist in spotify to find track to later use in add
         playlist.
         """
-        search_result = {}
+        search_results = []
+        params = {
+            'type': search_type,
+            'q': search_track
+        }
 
-        response = self.spotify_client.search(request_data)
-        if not response:
-            return
+        response = self.spotify_client.search(params=params)
+        search_result = self.validate_response(response)
 
-        dict_key, *_ = response
         # Spotify returns first dict key as album or track or artist which depends on
         # search request. This dict_key can be taken from request data but ...
+        dict_key, *_ = search_result
 
         try:
-            search_result = {
-                'id': response[dict_key]['items'][0]['id'],
-                'name': response[dict_key]['items'][0]['name'],
-                'type': response[dict_key]['items'][0]['type'],
-                'uri': response[dict_key]['items'][0]['uri']
-            }
-        except KeyError:
-            logger.info(f"No result found for {request_data['q']}")
+            search_results.append({
+                'id': search_result[dict_key]['items'][0]['uri'],
+                'name': search_result[dict_key]['items'][0]['name'],
+                'type': search_result[dict_key]['items'][0]['type'],
+            })
+        except (KeyError, TypeError):
+            logger.info(f"No result found for {search_track}")
 
-        return search_result
+        return search_results

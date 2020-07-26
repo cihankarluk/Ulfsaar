@@ -22,7 +22,8 @@ class Adapter(BaseAdapter):
         characters_to_remove = "[!()@-]"
         strings_to_remove = "Official.Video"
         title = re.sub(characters_to_remove, "", title)
-        return re.sub(strings_to_remove, "", title)
+        title = re.sub(strings_to_remove, "", title)
+        return title
 
     def playlists(self):
         """
@@ -95,7 +96,7 @@ class Adapter(BaseAdapter):
 
         if len(playlists) > 10:
             logger.info(f"Only 10 playlists will be inserted due "
-                        f"to google block more then 10 playlist creation. "
+                        f"to google block more then 10 playlist insertion per day. "
                         f"Playlists to be added are: {playlists[:10]}")
 
         for playlist in playlists[:10]:
@@ -136,7 +137,10 @@ class Adapter(BaseAdapter):
         request_data = {
             "snippet": {
                 "playlistId": playlist_id,
-                "resourceId": track
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": track
+                }
             }
         }
 
@@ -146,12 +150,13 @@ class Adapter(BaseAdapter):
 
         return
 
-    def search(self, search_track: str, search_type: str = None) -> List[dict]:
+    def search(self, search_track: str, search_type: str = None) -> dict:
         """
         Search for given tracks and append results to later use in add tracks to
         playlist.
         """
-        search_results = []
+        search_response = None
+
         params = {
             'part': 'snippet',
             'q': search_track,
@@ -160,12 +165,12 @@ class Adapter(BaseAdapter):
         search_result = self.youtube_client.search(params)
 
         try:
-            search_results.append({
+            search_response = {
                 'id': search_result['items'][0]['id']['videoId'],
                 'name': search_result['items'][0]['snippet']['title'],
                 'type': None,
-            })
+            }
         except (KeyError, TypeError):
             logger.info(f"No result found for {search_track}")
 
-        return search_results
+        return search_response

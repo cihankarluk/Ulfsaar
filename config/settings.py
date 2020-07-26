@@ -50,7 +50,9 @@ INSTALLED_APPS = [
 
     'musicwire.provider',
     'musicwire.core',
-    'musicwire.transfer'
+    'musicwire.transfer',
+    'musicwire.account',
+    'musicwire.music'
 ]
 
 MIDDLEWARE = [
@@ -62,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+    'musicwire.account.middleware.UserAuthenticationMiddleware',
     'elasticapm.contrib.django.middleware.TracingMiddleware',
 ]
 
@@ -84,6 +87,7 @@ TEMPLATES = [
 ]
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'musicwire.core.helpers.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
 }
@@ -143,6 +147,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+EXEMPT_URLS = ['/user/signup', '/user/signin']
 
 RAVEN_CONFIG = {
     'dns': os.getenv("RAVEN_DNS")
@@ -197,22 +202,6 @@ CACHES = {
         }
     },
 }
-
-REDIS = {
-    'default': (
-        os.getenv("REDIS_HOST"),
-        os.getenv("REDIS_PORT"),
-        os.getenv("REDIS_DB"),
-    )
-}
-
-REDIS_CLUSTER_ENABLED = False
-REDIS_CLUSTER_NODES = [
-    {
-        "host": os.getenv("REDIS_CLUSTER_HOST"),
-        "port": os.getenv("REDIS_CLUSTER_PORT")
-    },
-]
 
 TRACK_CACHE_TIME = 60 * 5  # 5 minutes
 

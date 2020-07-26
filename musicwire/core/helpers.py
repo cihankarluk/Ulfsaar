@@ -1,9 +1,13 @@
 import logging
+import uuid
 from functools import wraps
 
 from django.conf import settings
 from raven import Client
 from requests import exceptions as requests_exceptions
+from rest_framework.exceptions import APIException
+from rest_framework.response import Response
+from rest_framework.views import exception_handler
 from urllib3 import exceptions
 
 
@@ -30,8 +34,42 @@ def request_validator(func):
     return aux
 
 
+def custom_exception_handler(exc, context: dict):
+    """
+    Rest Framework exception handler
+    :param exc: AttributeError etc
+    :param context: dict
+    :return: raise exc
+    """
+    response = exception_handler(exc, context)
+    if not isinstance(exc, APIException):
+        raise exc
+    elif isinstance(response.data, dict):
+        response.data = response.data[next(iter(response.data))]
+    error_message = response.data[0]
+
+    code = getattr(exc, 'code', None)
+    if code is None:
+        code = 'VALIDATION_ERROR'
+
+    if not isinstance(error_message, dict):
+        error_message = str(error_message)
+
+    data = {
+        'status_code': response.status_code,
+        'code': code,
+        'error_message': error_message
+    }
+
+    return Response(data, status=response.status_code, headers=response._headers)
+
+
 def sentry_logger(message):
     """Sentry configuration"""
     sentry = Client(settings.RAVEN_DSN)
     sentry.tags_context({'Error Message': message})
     sentry.captureException()
+
+
+def generate_uniq_id(size=32):
+    return uuid.uuid1().hex[:size]

@@ -1,32 +1,22 @@
-import json
-import urllib.parse
-
-import requests
-
-from musicwire.core.helpers import request_validator
+from musicwire.provider.clients.base import BaseClient
 
 
-class Client:
+class Client(BaseClient):
     def __init__(self, *args, **kwargs):
-        self.base_url = kwargs['base_url']
+        super(Client, self).__init__(**kwargs)
         self.token = kwargs['token']
 
-    @request_validator
-    def make_request(self, end_point, params=None, data=None, method='GET'):
-        url = urllib.parse.urljoin(self.base_url, end_point)
-
+    def get_headers(self):
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': f'Bearer {self.token}'
         }
-        if method.lower() in ('get', 'delete'):
-            return requests.request(method, url=url, headers=headers, params=params)
-        else:
-            # Two repeated code due to differentiate post and get methods.
-            post_data = dict([(k, v) for k, v in data.items() if v is not None])
-            return requests.request(method, url=url, headers=headers,
-                                    data=json.dumps(post_data), params=params)
+        return headers
+
+    def update_params(self, params):
+        params['access_token'] = self.token
+        return params
 
     def get_playlists(self, params: dict):
         end_point = "playlists"

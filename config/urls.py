@@ -18,5 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('transfer/', include('musicwire.transfer.urls'), name='transfer')
+    path('transfer/', include('musicwire.transfer.urls'), name='transfer'),
+    path('user/', include('musicwire.account.urls'), name='account'),
+    path('music/', include('musicwire.music.urls'), name='music')
 ]

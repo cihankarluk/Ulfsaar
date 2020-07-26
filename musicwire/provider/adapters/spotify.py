@@ -74,7 +74,7 @@ class Adapter:
         return self.collect_concurrently(fn, request_data, fn.__name__)
 
     @staticmethod
-    def get_saved_tracks(tracks: List[dict]) -> List[dict]:
+    def get_tracks(tracks: List[dict]) -> List[dict]:
         saved_tracks = []
 
         for item in tracks:
@@ -97,7 +97,7 @@ class Adapter:
         """
         tracks = self.collector(self.spotify_client.get_saved_tracks, limit, offset)
 
-        return self.get_saved_tracks(tracks)
+        return self.get_tracks(tracks)
 
     def playlists(self, limit=50, offset=0) -> Optional[List]:
         """
@@ -110,12 +110,11 @@ class Adapter:
         # TODO: check if first loop necessary
         for item in playlists:
             for playlist in item['items']:
-                # TODO: might use dataclass for keep whole thing under control.
                 playlist_data = {
                     'playlist_id': playlist['id'],
                     'playlist_name': playlist['name'],
                     'playlist_status': playlist['public'],
-                    'playlist_uri': playlist['uri']
+                    'playlist_content': None
                 }
                 user_playlists.append(playlist_data)
         return user_playlists
@@ -148,7 +147,7 @@ class Adapter:
         tracks = self.collector(self.spotify_client.get_playlist_tracks,
                                 limit, paging, **data)
 
-        return self.get_saved_tracks(tracks)
+        return self.get_tracks(tracks)
 
     def create_playlists(self, playlists: list) -> List[dict]:
         """

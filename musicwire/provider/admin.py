@@ -1,3 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
+from musicwire.provider.models import Provider
+
+admin.site.register(Provider)

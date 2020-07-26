@@ -1,27 +1,16 @@
 import logging
-from typing import List
 
 from django.conf import settings
 from django.core.cache import cache
+from django.http import HttpResponse
 from rest_framework.views import APIView
 
-from musicwire.provider.helpers import import_provider_class
 from musicwire.transfer.serializers import TransferPlaylistSerializer
 
 logger = logging.getLogger(__name__)
 
 
 class TransferPlaylistsView(APIView):
-    @staticmethod
-    def get_provider(provider: str, token: str):
-        """
-        Get interested Adapter.
-        """
-        # TODO: need to check return type
-        provider_module = import_provider_class(provider)
-        adapter = provider_module(token=token)
-        return adapter
-
     @staticmethod
     def cache_playlist_tracks(adapter, playlists: list) -> bool:
         """
@@ -31,8 +20,11 @@ class TransferPlaylistsView(APIView):
         """
         for playlist in playlists:
             playlist_name = playlist['playlist_name']
-            playlist_id = playlist['playlist_id']
-            tracks = adapter.playlist_tracks(playlist_id=playlist_id)
+
+            if cache.get(playlist_name):
+                continue
+
+            tracks = adapter.playlist_tracks(playlist_id=playlist['playlist_id'])
 
             if not tracks:
                 logger.info(f"Problem with getting tracks of {playlist_name}.")
@@ -45,11 +37,13 @@ class TransferPlaylistsView(APIView):
         for created_playlist in created_playlists:
             search_tracks = cache.get(created_playlist['playlist_name'])
             for track in search_tracks:
-                search_results = adapter.search(track['track_name'])
-                playlist_id = created_playlist['playlist_id']
+                search_result = adapter.search(track['track_name'])
+                if not search_result:
+                    continue
+
                 adapter.add_tracks_to_playlist(
-                    playlist_id=playlist_id,
-                    track=search_results['id']
+                    playlist_id=created_playlist['playlist_id'],
+                    track=search_result['id']
                 )
 
     def post(self, request, *args, **kwargs):
@@ -68,7 +62,7 @@ class TransferPlaylistsView(APIView):
             # Spotify does not provider saved tracks as playlist.
             saved_tracks = from_adapter.saved_tracks()
             cache.set(f"saved_tracks", saved_tracks, settings.TRACK_CACHE_TIME)
-            playlists = []
+            playlists = []  # TODO: this will be removed
             playlists.append({'playlist_name': 'saved_tracks', 'playlist_status': False})
 
         to_provider = valid_data['to_']
@@ -79,7 +73,7 @@ class TransferPlaylistsView(APIView):
             playlists.append(valid_data['user_id'])
 
         # created_playlists = to_adapter.create_playlists(playlists)
-        created_playlists = [{'playlist_id': 'PLC7MwgN4I2dURJorFgMe7Dzg6SgTe9-wX',
+        created_playlists = [{'playlist_id': 'PLQBAidSrPHH_oh0NhuNwlawcK-lmrD5zY',
                               'playlist_collaborative': None,
                               'playlist_description': '',
                               'playlist_name': 'saved_tracks',
@@ -88,3 +82,6 @@ class TransferPlaylistsView(APIView):
             adapter=to_adapter,
             created_playlists=created_playlists
         )
+
+        x = {"success": True}
+        return HttpResponse(**x, status=200)

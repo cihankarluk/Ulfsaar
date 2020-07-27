@@ -13,6 +13,9 @@ class Playlist(models.Model):
     is_transferred = models.BooleanField(default=False)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True)
 
+    def __str__(self):
+        return self.name
+
 
 class PlaylistTrack(models.Model):
     name = models.CharField(max_length=256)
@@ -22,3 +25,7 @@ class PlaylistTrack(models.Model):
     remote_id = models.CharField(max_length=155)
     is_transferred = models.BooleanField(default=False)
     provider = models.CharField(max_length=64, choices=Provider.PROVIDERS)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return self.name

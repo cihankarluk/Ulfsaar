@@ -57,4 +57,3 @@ class UserAuthenticationMiddleware(MiddlewareMixin):
             )
 
         setattr(request, 'account', user)
-

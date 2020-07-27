@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class Adapter:
     _executor = ThreadPoolExecutor(max_workers=4)
+    saved_tracks_id = "spotify_saved_tracks"
 
     def __init__(self, token):
         req_data = {
@@ -113,7 +114,7 @@ class Adapter:
                 playlist_data = {
                     'playlist_id': playlist['id'],
                     'playlist_name': playlist['name'],
-                    'playlist_status': playlist['public'],
+                    'playlist_status': "public" if playlist['public'] else "private",
                     'playlist_content': None
                 }
                 user_playlists.append(playlist_data)

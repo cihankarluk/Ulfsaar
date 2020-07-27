@@ -1,18 +1,25 @@
 import logging
 
+from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from musicwire.music.models import Playlist, PlaylistTrack
 from musicwire.provider.models import Provider
-from musicwire.music.serializers import PlaylistsSerializer, TracksSerializer
+from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
+    PlaylistSerializer, TrackSerializer
 
 logger = logging.getLogger(__name__)
 
 
-class PlaylistView(APIView):
+class PlaylistView(generics.ListAPIView):
+    serializer_class = PlaylistSerializer
+
+    def get_queryset(self):
+        playlists = Playlist.objects.filter(user=self.request.account)
+        return playlists
+
     def post(self, request, *args, **kwargs):
-        serialized = PlaylistsSerializer(data=self.request.data)
+        serialized = PlaylistPostSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
@@ -20,9 +27,16 @@ class PlaylistView(APIView):
         adapter = Provider.get_provider(source, valid_data['source_token'])
 
         playlists = adapter.playlists()
+        if source == Provider.SPOTIFY:
+            playlists.append({
+                "playlist_id": adapter.saved_tracks_id,
+                "playlist_name": "saved_tracks",
+                "playlist_status": "public",
+                "playlist_content": None,
+            })
 
         for playlist in playlists:
-            Playlist.objects.create(
+            Playlist.objects.get_or_create(
                 name=playlist['playlist_name'],
                 status=playlist['playlist_status'],
                 remote_id=playlist['playlist_id'],
@@ -34,9 +48,20 @@ class PlaylistView(APIView):
         return Response(playlists, status=200)
 
 
-class TrackView(APIView):
+class TrackView(generics.ListAPIView):
+    serializer_class = TrackSerializer
+
+    def get_queryset(self):
+        request = self.request
+        query_params = request.query_params
+        tracks = PlaylistTrack.objects.select_related('playlist').filter(
+            user=request.account,
+            playlist__remote_id=query_params.get('playlist_id')
+        )
+        return tracks
+
     def post(self, request, *args, **kwargs):
-        serialized = TracksSerializer(data=self.request.data)
+        serialized = TrackPostSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
@@ -50,16 +75,21 @@ class TrackView(APIView):
 
         adapter = Provider.get_provider(source, valid_data['source_token'])
 
-        tracks = adapter.playlists_tracks()
+        if playlist_id == "spotify_saved_tracks":
+            tracks = adapter.saved_tracks()
+        else:
+            tracks = adapter.playlist_tracks(playlist_id=playlist_id)
 
         for track in tracks:
             # TODO: need to rename dict keys and use bulk create
-            PlaylistTrack.objects.create(
+            PlaylistTrack.objects.get_or_create(
                 name=track['track_name'],
                 artist=track['track_artist'],
-                remote_id=track['id'],
+                remote_id=track['track_id'],
                 album=track['track_album_name'],
                 playlist=playlist,
                 provider=source,
                 user=request.account
             )
+
+        return Response(tracks, status=200)

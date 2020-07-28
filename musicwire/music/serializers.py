@@ -1,7 +1,9 @@
 from rest_framework import serializers
 
+from musicwire.core.exceptions import ValidationError
 from musicwire.core.serializers import BaseSerializer
 from musicwire.music.models import Playlist, PlaylistTrack
+from musicwire.provider.models import Provider
 
 
 class PlaylistSerializer(serializers.ModelSerializer):
@@ -31,3 +33,19 @@ class TrackPostSerializer(BaseSerializer, serializers.Serializer):
     source = serializers.CharField()
     source_token = serializers.CharField()
     playlist_id = serializers.CharField()
+
+
+class CreatePlaylistSerializer(BaseSerializer, serializers.Serializer):
+    end = serializers.CharField()
+    end_token = serializers.CharField()
+    playlist_name = serializers.CharField()
+    privacy_status = serializers.CharField(required=False)
+    collaborative = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+    user_id = serializers.CharField(required=False)
+
+    def validate_end(self, val):
+        user_id = self.initial_data.get('user_id')
+        if val == Provider.SPOTIFY and user_id is None:
+            raise ValidationError('user_id is required for Spotify.')
+        return val

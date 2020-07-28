@@ -149,37 +149,36 @@ class Adapter:
 
         return self.get_tracks(tracks)
 
-    def create_playlists(self, playlists: list) -> List[dict]:
+    def create_playlist(self, playlist: dict) -> List[dict]:
         """
         Post a new playlist in user account.
         """
-        created_playlists = []
-        user_id = playlists.pop()
+        user_id = playlist.pop('user_id')
 
-        for playlist in playlists:
-            request_data = {
-                "name": playlist['playlist_name'],
-                "public": playlist.get('privacy_status'),
-                "collaborative": playlist.get('collaborative'),
-                "description": playlist.get('description')
+        request_data = {
+            "name": playlist['playlist_name'],
+            "public": playlist.get('privacy_status'),
+            "collaborative": playlist.get('collaborative'),
+            "description": playlist.get('description')
+        }
+
+        response = self.spotify_client.create_a_playlist(user_id, request_data)
+        playlist_data = self.validate_response(response)
+
+        try:
+            created_playlist = {
+                "playlist_id": playlist_data['uri'],
+                "playlist_collaborative": playlist_data['collaborative'],  # Need to control this
+                "playlist_description": playlist_data['description'],
+                "playlist_name": playlist_data['name'],
+                "playlist_status": "public" if playlist_data['public'] else "private",
             }
+            logger.info(f"Created: {playlist['playlist_name']}.")
+        except TypeError:
+            created_playlist = []
+            logger.info(f"Fail to create: {playlist['playlist_name']}.")
 
-            response = self.spotify_client.create_a_playlist(user_id, request_data)
-            playlist_data = self.validate_response(response)
-
-            try:
-                created_playlists.append({
-                    "playlist_id": playlist_data['uri'],
-                    "playlist_collaborative": playlist_data['collaborative'],  # Need to control this
-                    "playlist_description": playlist_data['description'],
-                    "playlist_name": playlist_data['name'],
-                    "playlist_status": playlist_data['public'],
-                })
-                logger.info(f"Created: {playlist['playlist_name']}.")
-            except TypeError:
-                logger.info(f"Fail to create: {playlist['playlist_name']}.")
-
-        return created_playlists
+        return created_playlist
 
     def add_tracks_to_playlist(self, playlist_id: str, track: list):
         """

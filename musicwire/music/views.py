@@ -2,11 +2,12 @@ import logging
 
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from musicwire.music.models import Playlist, PlaylistTrack
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
-    PlaylistSerializer, TrackSerializer
+    PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +103,29 @@ class TrackView(generics.ListAPIView):
         PlaylistTrack.objects.bulk_create(objs)
 
         return Response(tracks, status=200)
+
+
+class CreatePlaylistView(APIView):
+    serializer_class = CreatePlaylistSerializer
+
+    def post(self, request, *args, **kwargs):
+        serialized = self.serializer_class(data=self.request.data)
+        serialized.is_valid(raise_exception=True)
+        valid_data = serialized.validated_data
+
+        source = valid_data['end']
+        adapter = Provider.get_provider(source, valid_data['end_token'])
+
+        request_data = {
+            "playlist_name": valid_data["playlist_name"],
+            "privacy_status": valid_data.get("privacy_status"),
+            "collaborative": valid_data.get("collaborative"),
+            "description": valid_data.get("description"),
+        }
+
+        if source == Provider.SPOTIFY:
+            request_data["user_id"] = valid_data["user_id"]
+
+        playlist = adapter.create_playlist(request_data)
+
+        return Response(playlist, status=200)

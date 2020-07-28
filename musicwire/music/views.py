@@ -35,15 +35,20 @@ class PlaylistView(generics.ListAPIView):
                 "playlist_content": None,
             })
 
-        for playlist in playlists:
-            Playlist.objects.get_or_create(
-                name=playlist['playlist_name'],
-                status=playlist['playlist_status'],
-                remote_id=playlist['playlist_id'],
-                content=playlist['playlist_content'],
-                provider=source,
-                user=request.account
-            )
+        db_playlist = Playlist.objects.filter(
+            user=request.account
+        ).values_list('remote_id', flat=True)
+
+        objs = [Playlist(
+            name=playlist['playlist_name'],
+            status=playlist['playlist_status'],
+            remote_id=playlist['playlist_id'],
+            content=playlist['playlist_content'],
+            provider=source,
+            user=request.account
+        ) for playlist in playlists if playlist['playlist_id'] not in db_playlist]
+
+        Playlist.objects.bulk_create(objs)
 
         return Response(playlists, status=200)
 
@@ -80,16 +85,20 @@ class TrackView(generics.ListAPIView):
         else:
             tracks = adapter.playlist_tracks(playlist_id=playlist_id)
 
-        for track in tracks:
-            # TODO: need to rename dict keys and use bulk create
-            PlaylistTrack.objects.get_or_create(
-                name=track['track_name'],
-                artist=track['track_artist'],
-                remote_id=track['track_id'],
-                album=track['track_album_name'],
-                playlist=playlist,
-                provider=source,
-                user=request.account
-            )
+        db_tracks = PlaylistTrack.objects.filter(
+            user=request.account
+        ).values_list('remote_id', flat=True)
+
+        objs = [PlaylistTrack(
+            name=track['track_name'],
+            artist=track['track_artist'],
+            remote_id=track['track_id'],
+            album=track['track_album_name'],
+            playlist=playlist,
+            provider=source,
+            user=request.account
+        ) for track in tracks if track['track_id'] not in db_tracks]
+
+        PlaylistTrack.objects.bulk_create(objs)
 
         return Response(tracks, status=200)

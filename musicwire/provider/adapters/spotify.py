@@ -3,7 +3,7 @@ from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
-from musicwire.core.exceptions import ValidationError
+from musicwire.core.exceptions import ValidationError, ProviderResponseError
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult
 
@@ -24,7 +24,7 @@ class Adapter:
     @staticmethod
     def validate_response(response: ClientResult):
         if response.error:
-            raise response.error_obj
+            raise ProviderResponseError(response.error_msg)
         return response.result
 
     def collect_concurrently(
@@ -64,8 +64,7 @@ class Adapter:
         response = fn(request_data=request_data)
         # TODO: Might concatenate this response with thread responses to avoid
         #  redundant request
-        if not response:
-            return []
+        self.validate_response(response)
 
         total_pages = int(response.get('total') / limit) + 1
 

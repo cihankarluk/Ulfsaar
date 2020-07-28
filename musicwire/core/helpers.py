@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 from functools import wraps
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 from urllib3 import exceptions
 
+from musicwire.provider.datastructures import ClientResult
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,9 @@ logger = logging.getLogger(__name__)
 def request_validator(func):
     @wraps(func)
     def aux(*args, **kwargs):
+        error = False
+        error_message = None
+        result = None
         try:
             response = func(*args, **kwargs)
         except (exceptions.ReadTimeoutError,
@@ -24,13 +29,14 @@ def request_validator(func):
                 exceptions.ConnectionError,
                 requests_exceptions.ConnectionError) as e:
             logging.error(f"Connection error as {e}")
-            return
+            return ClientResult(result=result, error=True, error_msg='Connection Error')
         if response and response.ok:
-            response_data = response.json()
+            result = response.json()
         else:
             logger.error(f"Response error: {response.text}")
-            return
-        return response_data
+            error = True
+            error_message = response.text
+        return ClientResult(result=result, error=error, error_msg=error_message)
     return aux
 
 
@@ -53,7 +59,7 @@ def custom_exception_handler(exc, context: dict):
         code = 'VALIDATION_ERROR'
 
     if not isinstance(error_message, dict):
-        error_message = str(error_message)
+        error_message = json.loads(error_message)
 
     data = {
         'status_code': response.status_code,

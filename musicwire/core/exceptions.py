@@ -25,3 +25,7 @@ class AddTracksError(ValidationError):
 
 class ProviderDoesNotExists(ValidationError):
     code = 'PROVIDER_DOES_NOT_EXISTS'
+
+
+class ProviderResponseError(ValidationError):
+    code = 'PROVIDER_RESPONSE_ERROR'

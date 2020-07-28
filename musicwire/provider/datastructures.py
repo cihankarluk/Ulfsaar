@@ -4,9 +4,9 @@ from typing import Optional
 
 @dataclass
 class ClientResult:
-    result: dict
+    result: Optional[dict]
     error: bool
-    error_obj: Optional[Exception]
+    error_msg: Optional[str]
 
 
 class ProviderClientError(Exception):

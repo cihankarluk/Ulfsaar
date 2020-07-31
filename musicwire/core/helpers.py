@@ -2,7 +2,6 @@ import json
 import logging
 import uuid
 from functools import wraps
-from json import JSONDecodeError
 
 from django.conf import settings
 from raven import Client
@@ -51,7 +50,8 @@ def custom_exception_handler(exc, context: dict):
     response = exception_handler(exc, context)
     if not isinstance(exc, APIException):
         raise exc
-    elif isinstance(response.data, dict) and (len(response.data) > 1 or not response.data.get('error')):
+    elif isinstance(response.data, dict) and (
+            len(response.data) > 1 or not response.data.get('error')):
         error_message = response.data
     elif isinstance(response.data, list):
         error_message = response.data[0]

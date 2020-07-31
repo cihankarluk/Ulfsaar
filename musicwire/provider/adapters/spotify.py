@@ -106,9 +106,12 @@ class Adapter:
         """
         Get playlists of user.
         """
-        user_playlists = []
+        user_playlists, playlists = [], []
 
-        playlists = self.collector(self.spotify_client.get_playlists, limit, offset)
+        responses: list = self.collector(self.spotify_client.get_playlists, limit, offset)
+
+        for response in responses:
+            playlists.append(self.validate_response(response))
 
         # TODO: check if first loop necessary
         for item in playlists:
@@ -126,9 +129,12 @@ class Adapter:
         """
         Get albums of user.
         """
-        user_albums = []
+        user_albums, albums = [], []
 
-        albums = self.collector(self.spotify_client.get_albums, limit, offset)
+        responses = self.collector(self.spotify_client.get_albums, limit, offset)
+
+        for response in responses:
+            albums.append(self.validate_response(response))
 
         for item in albums:
             for album in item['items']:
@@ -144,10 +150,14 @@ class Adapter:
         """
         Get a playlist's tracks.
         """
+        tracks = []
         data = {'playlist_id': playlist_id}
 
-        tracks = self.collector(self.spotify_client.get_playlist_tracks,
-                                limit, paging, **data)
+        responses = self.collector(self.spotify_client.get_playlist_tracks,
+                                   limit, paging, **data)
+
+        for response in responses:
+            tracks.append(self.validate_response(response))
 
         return self.get_tracks(tracks)
 

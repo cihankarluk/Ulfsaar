@@ -51,12 +51,12 @@ def custom_exception_handler(exc, context: dict):
     response = exception_handler(exc, context)
     if not isinstance(exc, APIException):
         raise exc
-    elif isinstance(response.data, dict):  # and len(response.data) > 1:
+    elif isinstance(response.data, dict) and (len(response.data) > 1 or not response.data.get('error')):
         error_message = response.data
     elif isinstance(response.data, list):
         error_message = response.data[0]
-    # else:  # Need to find way to print serializers errors.
-    #    error_message = response.data[next(iter(response.data))][0]
+    else:
+        error_message = response.data[next(iter(response.data))][0]
 
     code = getattr(exc, 'code', None)
     if code is None:

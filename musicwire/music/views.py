@@ -9,7 +9,7 @@ from musicwire.music.models import Playlist, PlaylistTrack
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
-    AddPlaylistTrackSerializer
+    AddPlaylistTrackSerializer, SearchSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +61,8 @@ class PlaylistTrackView(generics.ListAPIView):
     filter_backends = [PlaylistTrackFilter]
 
     def get_queryset(self):
-        request = self.request
         tracks = PlaylistTrack.objects.select_related('playlist').filter(
-            user=request.account
+            user=self.request.account
         )
         return tracks
 
@@ -137,7 +136,7 @@ class AddTrackToPlaylistView(APIView):
     serializer_class = AddPlaylistTrackSerializer
 
     def post(self, request, *args, **kwargs):
-        serialized = AddPlaylistTrackSerializer(data=self.request.data)
+        serialized = self.serializer_class(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
@@ -145,3 +144,17 @@ class AddTrackToPlaylistView(APIView):
         adapter.add_track_to_playlist(valid_data['playlist_id'], valid_data['track_id'])
 
         return Response(status=201)
+
+
+class SearchView(APIView):
+    serializer_class = SearchSerializer
+
+    def post(self, request, *args, **kwargs):
+        serialized = self.serializer_class(data=self.request.data)
+        serialized.is_valid(raise_exception=True)
+        valid_data = serialized.validated_data
+
+        adapter = Provider.get_provider(valid_data['source'], valid_data['source_token'])
+        response = adapter.search(valid_data['track_name'])
+
+        return Response(response, status=200)

@@ -200,12 +200,12 @@ class Adapter:
     def upload_playlist_cover_image(self):
         raise NotImplemented()
 
-    def search(self, search_track: str, search_type: str = 'track') -> List[dict]:
+    def search(self, search_track: str, search_type: str = 'track') -> dict:
         """
         Search an album, track, artist in spotify to find track to later use in add
         playlist.
         """
-        search_results = []
+        result = {}
         params = {
             'type': search_type,
             'q': search_track
@@ -219,12 +219,12 @@ class Adapter:
         dict_key, *_ = search_result
 
         try:
-            search_results.append({
+            result = {
                 'id': search_result[dict_key]['items'][0]['uri'],
                 'name': search_result[dict_key]['items'][0]['name'],
                 'type': search_result[dict_key]['items'][0]['type'],
-            })
+            }
         except (KeyError, TypeError):
             logger.info(f"No result found for {search_track}")
 
-        return search_results
+        return result

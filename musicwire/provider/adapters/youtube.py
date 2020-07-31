@@ -155,7 +155,7 @@ class Adapter(BaseAdapter):
         Search for given tracks and append results to later use in add tracks to
         playlist.
         """
-        search_response = None
+        search_response = {}
 
         params = {
             'part': 'snippet',

@@ -58,6 +58,12 @@ class AddPlaylistTrackSerializer(BaseSerializer, serializers.Serializer):
     track_id = serializers.CharField()
 
 
+class SearchSerializer(BaseSerializer, serializers.Serializer):
+    source = serializers.CharField()
+    source_token = serializers.CharField()
+    track_name = serializers.CharField()
+
+
 class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):
     playlist_id = serializers.CharField(required=False)
     name = serializers.CharField(required=False)

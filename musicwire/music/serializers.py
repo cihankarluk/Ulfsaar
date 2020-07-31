@@ -49,3 +49,18 @@ class CreatePlaylistSerializer(BaseSerializer, serializers.Serializer):
         if val == Provider.SPOTIFY and user_id is None:
             raise ValidationError('user_id is required for Spotify.')
         return val
+
+
+class AddPlaylistTrackSerializer(BaseSerializer, serializers.Serializer):
+    end = serializers.CharField()
+    end_token = serializers.CharField()
+    playlist_id = serializers.CharField()
+    track_id = serializers.CharField()
+
+
+class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):
+    playlist_id = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
+    album = serializers.CharField(required=False)
+    is_transferred = serializers.BooleanField(required=False)
+    provider = serializers.CharField(required=False)

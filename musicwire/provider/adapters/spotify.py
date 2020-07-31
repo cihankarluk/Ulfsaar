@@ -64,7 +64,7 @@ class Adapter:
         response = fn(request_data=request_data)
         # TODO: Might concatenate this response with thread responses to avoid
         #  redundant request
-        self.validate_response(response)
+        response = self.validate_response(response)
 
         total_pages = int(response.get('total') / limit) + 1
 
@@ -81,11 +81,10 @@ class Adapter:
             for track in item['items']:
                 track = track['track']
                 track_data = {
-                    'track_id': track['id'],
+                    'track_id': track['uri'],
                     'track_album_name': track['album']['name'],
                     'track_name': track['name'],
                     'track_artist': track['artists'][0]['name'],
-                    'track_uri': track['uri']
                 }
                 saved_tracks.append(track_data)
 
@@ -95,7 +94,11 @@ class Adapter:
         """
         Get saved tracks of user.
         """
-        tracks = self.collector(self.spotify_client.get_saved_tracks, limit, offset)
+        tracks = []
+        responses: list = self.collector(self.spotify_client.get_saved_tracks, limit, offset)
+
+        for response in responses:
+            tracks.append(self.validate_response(response))
 
         return self.get_tracks(tracks)
 
@@ -130,10 +133,9 @@ class Adapter:
         for item in albums:
             for album in item['items']:
                 album_data = {
-                    'album_id': album['album']['id'],
+                    'album_id': album['album']['uri'],
                     'album_name': album['album']['name'],
                     'album_popularity': album['album']['popularity'],
-                    'album_uri': album['album']['uri']
                 }
                 user_albums.append(album_data)
         return user_albums
@@ -180,20 +182,20 @@ class Adapter:
 
         return created_playlist
 
-    def add_tracks_to_playlist(self, playlist_id: str, track: list):
+    def add_track_to_playlist(self, playlist_id: str, track_id: str):
         """
         Post tracks to given playlist.
         """
-        request_data = {'uris': track}
+        request_data = {'uris': [track_id]}
         response = self.spotify_client.add_tracks_to_playlist(
             playlist_id, request_data
         )
         self.validate_response(response)
 
-        if not response:
-            logger.info(f"Spotify insert track fail: {track}")
+        if not response:  # TODO: Need to control if this control required
+            logger.info(f"Spotify insert track fail: {track_id}")
 
-        return
+        return response
 
     def upload_playlist_cover_image(self):
         raise NotImplemented()

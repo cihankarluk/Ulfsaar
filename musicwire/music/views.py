@@ -4,10 +4,12 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from musicwire.music.filters import PlaylistTrackFilter
 from musicwire.music.models import Playlist, PlaylistTrack
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
-    PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer
+    PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
+    AddPlaylistTrackSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -54,15 +56,14 @@ class PlaylistView(generics.ListAPIView):
         return Response(playlists, status=200)
 
 
-class TrackView(generics.ListAPIView):
+class PlaylistTrackView(generics.ListAPIView):
     serializer_class = TrackSerializer
+    filter_backends = [PlaylistTrackFilter]
 
     def get_queryset(self):
         request = self.request
-        query_params = request.query_params
         tracks = PlaylistTrack.objects.select_related('playlist').filter(
-            user=request.account,
-            playlist__remote_id=query_params.get('playlist_id')
+            user=request.account
         )
         return tracks
 
@@ -106,6 +107,7 @@ class TrackView(generics.ListAPIView):
 
 
 class CreatePlaylistView(APIView):
+    # TODO: may add model to view for created playlists.
     serializer_class = CreatePlaylistSerializer
 
     def post(self, request, *args, **kwargs):
@@ -113,8 +115,8 @@ class CreatePlaylistView(APIView):
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
-        source = valid_data['end']
-        adapter = Provider.get_provider(source, valid_data['end_token'])
+        end = valid_data['end']
+        adapter = Provider.get_provider(end, valid_data['end_token'])
 
         request_data = {
             "playlist_name": valid_data["playlist_name"],
@@ -123,9 +125,23 @@ class CreatePlaylistView(APIView):
             "description": valid_data.get("description"),
         }
 
-        if source == Provider.SPOTIFY:
+        if end == Provider.SPOTIFY:
             request_data["user_id"] = valid_data["user_id"]
 
         playlist = adapter.create_playlist(request_data)
 
         return Response(playlist, status=200)
+
+
+class AddTrackToPlaylistView(APIView):
+    serializer_class = AddPlaylistTrackSerializer
+
+    def post(self, request, *args, **kwargs):
+        serialized = AddPlaylistTrackSerializer(data=self.request.data)
+        serialized.is_valid(raise_exception=True)
+        valid_data = serialized.validated_data
+
+        adapter = Provider.get_provider(valid_data['end'], valid_data['end_token'])
+        adapter.add_track_to_playlist(valid_data['playlist_id'], valid_data['track_id'])
+
+        return Response(status=201)

@@ -127,7 +127,7 @@ class Adapter(BaseAdapter):
 
         return created_playlists
 
-    def add_tracks_to_playlist(self, playlist_id: str, track: str):
+    def add_track_to_playlist(self, playlist_id: str, track_id: str):
         """
         Post tracks to given playlist.
         """
@@ -139,7 +139,7 @@ class Adapter(BaseAdapter):
                 "playlistId": playlist_id,
                 "resourceId": {
                     "kind": "youtube#video",
-                    "videoId": track
+                    "videoId": track_id
                 }
             }
         }

@@ -70,3 +70,4 @@ class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):
     album = serializers.CharField(required=False)
     is_transferred = serializers.BooleanField(required=False)
     provider = serializers.CharField(required=False)
+    playlist_name = serializers.CharField(required=False)

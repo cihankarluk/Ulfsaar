@@ -4,13 +4,14 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
 from musicwire.core.exceptions import ValidationError, ProviderResponseError
+from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult
 
 logger = logging.getLogger(__name__)
 
 
-class Adapter:
+class Adapter(BaseAdapter):
     _executor = ThreadPoolExecutor(max_workers=4)
     saved_tracks_id = "spotify_saved_tracks"
 
@@ -215,7 +216,6 @@ class Adapter:
         Search an album, track, artist in spotify to find track to later use in add
         playlist.
         """
-        result = {}
         params = {
             'type': search_type,
             'q': search_track
@@ -229,12 +229,12 @@ class Adapter:
         dict_key, *_ = search_result
 
         try:
-            result = {
+            search_response = {
                 'id': search_result[dict_key]['items'][0]['uri'],
                 'name': search_result[dict_key]['items'][0]['name'],
                 'type': search_result[dict_key]['items'][0]['type'],
             }
         except (KeyError, TypeError):
-            logger.info(f"No result found for {search_track}")
+            search_response = {}
 
-        return result
+        return search_response

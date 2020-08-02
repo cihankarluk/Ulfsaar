@@ -13,11 +13,11 @@ class BaseAdapter(metaclass=abc.ABCMeta):
         raise NotImplemented()
 
     @abc.abstractmethod
-    def create_playlists(self, playlists: List[dict]) -> List[dict]:
+    def create_playlist(self, playlists: List[dict]) -> List[dict]:
         raise NotImplemented()
 
     @abc.abstractmethod
-    def add_tracks_to_playlist(self, playlist_id: str, track: str):
+    def add_track_to_playlist(self, playlist_id: str, track: str):
         raise NotImplemented()
 
     @abc.abstractmethod

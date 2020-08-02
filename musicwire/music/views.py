@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from musicwire.music.filters import PlaylistTrackFilter
-from musicwire.music.models import Playlist, PlaylistTrack
+from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
@@ -146,8 +146,11 @@ class AddTrackToPlaylistView(APIView):
         return Response(status=201)
 
 
-class SearchView(APIView):
+class SearchView(generics.ListAPIView):
     serializer_class = SearchSerializer
+
+    def get_queryset(self):
+        return SearchErrorTracks.objects.filter(user=self.request.account)
 
     def post(self, request, *args, **kwargs):
         serialized = self.serializer_class(data=self.request.data)

@@ -86,7 +86,7 @@ class Adapter(BaseAdapter):
         #  will be added.
         raise NotImplemented()
 
-    def create_playlists(self, playlists: list) -> List[dict]:
+    def create_playlist(self, playlists: list) -> List[dict]:
         """
         Post a new playlists in user account. Max create playlist limit is set to
          10 per day.
@@ -155,8 +155,6 @@ class Adapter(BaseAdapter):
         Search for given tracks and append results to later use in add tracks to
         playlist.
         """
-        search_response = {}
-
         params = {
             'part': 'snippet',
             'q': search_track,
@@ -171,6 +169,6 @@ class Adapter(BaseAdapter):
                 'type': None,
             }
         except (KeyError, TypeError):
-            logger.info(f"No result found for {search_track}")
+            search_response = {}
 
         return search_response

@@ -21,6 +21,9 @@ class TransferredPlaylists(models.Model):
     end = models.CharField(max_length=64, choices=Provider.PROVIDERS)
     transfer_status = models.CharField(max_length=12, choices=TRANSFER_STATUSES)
 
+    def __str__(self):
+        return f"{self.name}/{self.source}->{self.end}"
+
 
 class TransferredTracks(models.Model):
     name = models.CharField(max_length=255)
@@ -29,3 +32,6 @@ class TransferredTracks(models.Model):
     source = models.CharField(max_length=64, choices=Provider.PROVIDERS)
     end = models.CharField(max_length=64, choices=Provider.PROVIDERS)
     transfer_status = models.CharField(max_length=12, choices=TransferredPlaylists.TRANSFER_STATUSES)
+
+    def __str__(self):
+        return f"{self.name}/{self.source}->{self.end}"

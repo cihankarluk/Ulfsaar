@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.exceptions import ValidationError, AuthenticationFailed
+from rest_framework.exceptions import ValidationError
 
 
 class ValidationError(ValidationError):

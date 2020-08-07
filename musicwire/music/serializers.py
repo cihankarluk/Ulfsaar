@@ -12,6 +12,10 @@ class PlaylistSerializer(serializers.ModelSerializer):
         fields = ("name", "status", "remote_id", "content", "provider", "is_transferred")
 
 
+class CreatedPlaylistSerializer(serializers.Serializer):
+    playlists = PlaylistSerializer(many=True)
+
+
 class TrackSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlaylistTrack

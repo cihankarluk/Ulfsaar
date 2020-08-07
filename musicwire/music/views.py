@@ -9,7 +9,7 @@ from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
-    AddPlaylistTrackSerializer, SearchSerializer
+    AddPlaylistTrackSerializer, SearchSerializer, CreatedPlaylistSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -27,33 +27,32 @@ class PlaylistView(generics.ListAPIView):
         valid_data = serialized.validated_data
 
         source = valid_data['source']
-        adapter = Provider.get_provider(source, valid_data['source_token'])
-
-        playlists = adapter.playlists()
-        if source == Provider.SPOTIFY:
-            playlists.append({
-                "playlist_id": adapter.saved_tracks_id,
-                "playlist_name": "saved_tracks",
-                "playlist_status": "public",
-                "playlist_content": None,
-            })
-
-        db_playlist = Playlist.objects.filter(
-            user=request.account
-        ).values_list('remote_id', flat=True)
-
-        objs = [Playlist(
-            name=playlist['playlist_name'],
-            status=playlist['playlist_status'],
-            remote_id=playlist['playlist_id'],
-            content=playlist['playlist_content'],
+        adapter = Provider.get_provider(
             provider=source,
+            token=valid_data['source_token'],
             user=request.account
-        ) for playlist in playlists if playlist['playlist_id'] not in db_playlist]
+        )
 
-        Playlist.objects.bulk_create(objs)
+        playlists: list = adapter.playlists()
+        if source == Provider.SPOTIFY:
+            try:
+                Playlist.objects.get(
+                    remote_id=adapter.saved_tracks_id,
+                    user=request.account
+                )
+            except Playlist.DoesNotExist:
+                saved_tracks_playlist = Playlist(
+                        name="saved_tracks",
+                        status="private",
+                        remote_id=adapter.saved_tracks_id,
+                        content=None,
+                        provider=Provider.SPOTIFY,
+                        user=request.account)
+                saved_tracks_playlist.save()
+                playlists.append(saved_tracks_playlist)
 
-        return Response(playlists, status=200)
+        serialized = CreatedPlaylistSerializer({"playlists": playlists})
+        return Response(serialized.data, status=200)
 
 
 class PlaylistTrackView(generics.ListAPIView):

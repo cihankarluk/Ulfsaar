@@ -19,10 +19,10 @@ class Provider(models.Model):
         return self.name
 
     @staticmethod
-    def get_provider(provider: str, token: str):
+    def get_provider(provider: str, token: str, user: object):
         """
         Get interested Adapter.
         """
         provider_module = import_provider_class(provider)
-        adapter = provider_module(token=token)
+        adapter = provider_module(token=token, user=user)
         return adapter

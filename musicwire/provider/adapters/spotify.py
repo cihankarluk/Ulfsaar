@@ -4,9 +4,11 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
 from musicwire.core.exceptions import ValidationError, ProviderResponseError
+from musicwire.music.models import Playlist
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult
+from musicwire.provider.models import Provider
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +17,13 @@ class Adapter(BaseAdapter):
     _executor = ThreadPoolExecutor(max_workers=4)
     saved_tracks_id = "spotify_saved_tracks"
 
-    def __init__(self, token):
+    def __init__(self, token, user):
         req_data = {
             'base_url': "https://api.spotify.com/v1/",
             'token': token,
         }
         self.spotify_client = Client(**req_data)
+        self.user = user
 
     @staticmethod
     def validate_response(response: ClientResult):
@@ -103,28 +106,35 @@ class Adapter(BaseAdapter):
 
         return self.get_tracks(tracks)
 
-    def playlists(self, limit=50, offset=0) -> Optional[List]:
+    def playlists(self, limit=50, offset=0) -> list:
         """
         Get playlists of user.
         """
-        user_playlists, playlists = [], []
+        objs, playlists = [], []
 
         responses: list = self.collector(self.spotify_client.get_playlists, limit, offset)
 
         for response in responses:
             playlists.append(self.validate_response(response))
 
+        db_playlist = Playlist.objects.filter(
+            user=self.user
+        ).values_list('remote_id', flat=True)
+
         # TODO: check if first loop necessary
         for item in playlists:
-            for playlist in item['items']:
-                playlist_data = {
-                    'playlist_id': playlist['id'],
-                    'playlist_name': playlist['name'],
-                    'playlist_status': "public" if playlist['public'] else "private",
-                    'playlist_content': None
-                }
-                user_playlists.append(playlist_data)
-        return user_playlists
+            objs = [Playlist(
+                name=playlist['name'],
+                status="public" if playlist['public'] else "private",
+                remote_id=playlist['id'],
+                content=None,
+                provider=Provider.SPOTIFY,
+                user=self.user
+            ) for playlist in item['items'] if playlist['id'] not in db_playlist]
+
+        Playlist.objects.bulk_create(objs)
+
+        return objs
 
     def albums(self, limit=50, offset=0) -> Optional[List]:
         """

@@ -78,7 +78,7 @@ class Adapter(BaseAdapter):
         return self.collect_concurrently(fn, request_data, fn.__name__)
 
     def get_tracks(self, tracks: List[dict], playlist_id: str) -> List[object]:
-        objs = []
+        finished_tracks = []
 
         try:
             playlist = Playlist.objects.get(remote_id=playlist_id, user=self.user)
@@ -100,10 +100,10 @@ class Adapter(BaseAdapter):
                 provider=Provider.SPOTIFY,
                 user=self.user
             ) for track in item['items'] if track['track']['uri'] not in db_tracks]
+            PlaylistTrack.objects.bulk_create(objs)
+            finished_tracks.append(objs)
 
-        PlaylistTrack.objects.bulk_create(objs)
-
-        return objs
+        return finished_tracks
 
     def saved_tracks(self, playlist_id: str, limit=50, offset=0) -> Optional[List]:
         """

@@ -29,3 +29,11 @@ class ProviderDoesNotExists(ValidationError):
 
 class ProviderResponseError(ValidationError):
     code = 'PROVIDER_RESPONSE_ERROR'
+
+
+class AllTracksAlreadyProcessed(ValidationError):
+    code = 'ALL_TRACKS_ALREADY_PROCESSED'
+
+
+class AllPlaylistsAlreadyProcessed(ValidationError):
+    code = 'ALL_PLAYLISTS_ALREADY_PROCESSED'

@@ -4,6 +4,8 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from musicwire.core.exceptions import AllTracksAlreadyProcessed, \
+    AllPlaylistsAlreadyProcessed
 from musicwire.music.filters import PlaylistTrackFilter
 from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
 from musicwire.provider.models import Provider
@@ -52,6 +54,11 @@ class PlaylistView(generics.ListAPIView):
                 saved_tracks_playlist.save()
                 playlists.append(saved_tracks_playlist)
 
+        if not any(playlists):
+            raise AllPlaylistsAlreadyProcessed(
+                "All playlist on this account already processed."
+            )
+
         serialized = PulledPlaylistSerializer({"playlists": playlists})
         return Response(serialized.data, status=200)
 
@@ -83,6 +90,11 @@ class PlaylistTrackView(generics.ListAPIView):
             tracks = adapter.saved_tracks(playlist_id=playlist_id)
         else:
             tracks = adapter.playlist_tracks(playlist_id=playlist_id)
+
+        if not any(tracks):
+            raise AllTracksAlreadyProcessed(
+                "All tracks on this playlist already processed."
+            )
 
         serialized = PulledTrackSerializer({"tracks": tracks})
         return Response(serialized.data, status=200)

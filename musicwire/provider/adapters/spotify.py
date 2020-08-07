@@ -4,7 +4,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
 from musicwire.core.exceptions import ValidationError, ProviderResponseError
-from musicwire.music.models import Playlist
+from musicwire.music.models import Playlist, PlaylistTrack
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult
@@ -77,24 +77,35 @@ class Adapter(BaseAdapter):
 
         return self.collect_concurrently(fn, request_data, fn.__name__)
 
-    @staticmethod
-    def get_tracks(tracks: List[dict]) -> List[dict]:
-        saved_tracks = []
+    def get_tracks(self, tracks: List[dict], playlist_id: str) -> List[object]:
+        objs = []
+
+        try:
+            playlist = Playlist.objects.get(remote_id=playlist_id, user=self.user)
+        except Playlist.DoesNotExist:
+            playlist = None
+            logger.info('Playlist does not exist for this user.')
+
+        db_tracks = PlaylistTrack.objects.filter(
+            user=self.user
+        ).values_list('remote_id', flat=True)
 
         for item in tracks:
-            for track in item['items']:
-                track = track['track']
-                track_data = {
-                    'track_id': track['uri'],
-                    'track_album_name': track['album']['name'],
-                    'track_name': track['name'],
-                    'track_artist': track['artists'][0]['name'],
-                }
-                saved_tracks.append(track_data)
+            objs = [PlaylistTrack(
+                name=track['track']['name'],
+                artist=track['track']['artists'][0]['name'],
+                remote_id=track['track']['uri'],
+                album=track['track']['album']['name'],
+                playlist=playlist,
+                provider=Provider.SPOTIFY,
+                user=self.user
+            ) for track in item['items'] if track['track']['uri'] not in db_tracks]
 
-        return saved_tracks
+        PlaylistTrack.objects.bulk_create(objs)
 
-    def saved_tracks(self, limit=50, offset=0) -> Optional[List]:
+        return objs
+
+    def saved_tracks(self, playlist_id: str, limit=50, offset=0) -> Optional[List]:
         """
         Get saved tracks of user.
         """
@@ -104,7 +115,7 @@ class Adapter(BaseAdapter):
         for response in responses:
             tracks.append(self.validate_response(response))
 
-        return self.get_tracks(tracks)
+        return self.get_tracks(tracks=tracks, playlist_id=playlist_id)
 
     def playlists(self, limit=50, offset=0) -> list:
         """
@@ -170,7 +181,7 @@ class Adapter(BaseAdapter):
         for response in responses:
             tracks.append(self.validate_response(response))
 
-        return self.get_tracks(tracks)
+        return self.get_tracks(tracks=tracks, playlist_id=playlist_id)
 
     def create_playlist(self, playlist: dict) -> List[dict]:
         """

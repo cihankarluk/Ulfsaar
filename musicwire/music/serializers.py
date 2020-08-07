@@ -12,7 +12,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
         fields = ("name", "status", "remote_id", "content", "provider", "is_transferred")
 
 
-class CreatedPlaylistSerializer(serializers.Serializer):
+class PulledPlaylistSerializer(serializers.Serializer):
     playlists = PlaylistSerializer(many=True)
 
 
@@ -26,6 +26,10 @@ class TrackSerializer(serializers.ModelSerializer):
         data = super(TrackSerializer, self).to_representation(instance)
         data['playlist_name'] = instance.playlist.name
         return data
+
+
+class PulledTrackSerializer(serializers.Serializer):
+    tracks = TrackSerializer(many=True)
 
 
 class PlaylistPostSerializer(BaseSerializer, serializers.Serializer):

@@ -9,7 +9,8 @@ from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
-    AddPlaylistTrackSerializer, SearchSerializer, CreatedPlaylistSerializer
+    AddPlaylistTrackSerializer, SearchSerializer, \
+    PulledPlaylistSerializer, PulledTrackSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class PlaylistView(generics.ListAPIView):
                 saved_tracks_playlist.save()
                 playlists.append(saved_tracks_playlist)
 
-        serialized = CreatedPlaylistSerializer({"playlists": playlists})
+        serialized = PulledPlaylistSerializer({"playlists": playlists})
         return Response(serialized.data, status=200)
 
 
@@ -72,36 +73,19 @@ class PlaylistTrackView(generics.ListAPIView):
 
         source, playlist_id = valid_data['source'], valid_data['playlist_id']
 
-        try:
-            playlist = Playlist.objects.get(remote_id=playlist_id, user=request.account)
-        except Playlist.DoesNotExist:
-            playlist = None
-            logger.info('playlist does not exist for this user.')
-
-        adapter = Provider.get_provider(source, valid_data['source_token'])
+        adapter = Provider.get_provider(
+            provider=source,
+            token=valid_data['source_token'],
+            user=request.account
+        )
 
         if playlist_id == "spotify_saved_tracks":
-            tracks = adapter.saved_tracks()
+            tracks = adapter.saved_tracks(playlist_id=playlist_id)
         else:
             tracks = adapter.playlist_tracks(playlist_id=playlist_id)
 
-        db_tracks = PlaylistTrack.objects.filter(
-            user=request.account
-        ).values_list('remote_id', flat=True)
-
-        objs = [PlaylistTrack(
-            name=track['track_name'],
-            artist=track['track_artist'],
-            remote_id=track['track_id'],
-            album=track['track_album_name'],
-            playlist=playlist,
-            provider=source,
-            user=request.account
-        ) for track in tracks if track['track_id'] not in db_tracks]
-
-        PlaylistTrack.objects.bulk_create(objs)
-
-        return Response(tracks, status=200)
+        serialized = PulledTrackSerializer({"tracks": tracks})
+        return Response(serialized.data, status=200)
 
 
 class CreatePlaylistView(APIView):

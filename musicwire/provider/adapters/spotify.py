@@ -4,7 +4,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
 from musicwire.core.exceptions import ValidationError, ProviderResponseError
-from musicwire.music.models import Playlist, PlaylistTrack
+from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult
@@ -30,6 +30,10 @@ class Adapter(BaseAdapter):
         if response.error:
             raise ProviderResponseError(response.error_msg)
         return response.result
+
+    @staticmethod
+    def status_control(playlist_data):
+        return "public" if playlist_data['public'] else "private"
 
     def collect_concurrently(
             self, fn: Callable, collection: Iterable, title=None
@@ -136,7 +140,7 @@ class Adapter(BaseAdapter):
         for item in playlists:
             objs = [Playlist(
                 name=playlist['name'],
-                status="public" if playlist['public'] else "private",
+                status=self.status_control(playlist),
                 remote_id=playlist['id'],
                 content=None,
                 provider=Provider.SPOTIFY,
@@ -183,34 +187,31 @@ class Adapter(BaseAdapter):
 
         return self.get_tracks(tracks=tracks, playlist_id=playlist_id)
 
-    def create_playlist(self, playlist: dict) -> List[dict]:
+    def create_playlist(self, playlist_data: dict) -> dict:
         """
         Post a new playlist in user account.
         """
-        user_id = playlist.pop('user_id')
+        user_id = playlist_data.pop('user_id')
 
         request_data = {
-            "name": playlist['playlist_name'],
-            "public": playlist.get('privacy_status'),
-            "collaborative": playlist.get('collaborative'),
-            "description": playlist.get('description')
+            "name": playlist_data['playlist_name'],
+            "public": playlist_data.get('privacy_status'),
+            "collaborative": playlist_data.get('collaborative'),
+            "description": playlist_data.get('description')
         }
 
         response = self.spotify_client.create_a_playlist(user_id, request_data)
         playlist_data = self.validate_response(response)
 
-        try:
-            created_playlist = {
-                "playlist_id": playlist_data['uri'],
-                "playlist_collaborative": playlist_data['collaborative'],  # Need to control this
-                "playlist_description": playlist_data['description'],
-                "playlist_name": playlist_data['name'],
-                "playlist_status": "public" if playlist_data['public'] else "private",
-            }
-            logger.info(f"Created: {playlist['playlist_name']}.")
-        except TypeError:
-            created_playlist = []
-            logger.info(f"Fail to create: {playlist['playlist_name']}.")
+        created_playlist = {
+            "name": playlist_data['name'],
+            "status": self.status_control(playlist_data),
+            "remote_id": playlist_data['uri'],
+            "provider": Provider.SPOTIFY,
+            "user": self.user
+        }
+        CreatedPlaylist.objects.create(**created_playlist)
+        created_playlist.pop("user")
 
         return created_playlist
 

@@ -1,6 +1,7 @@
 from rest_framework.filters import BaseFilterBackend
 
-from musicwire.music.serializers import PlaylistTrackFilterSerializer
+from musicwire.music.serializers import PlaylistTrackFilterSerializer, \
+    CreatedPlaylistDataSerializer
 
 
 class PlaylistTrackFilter(BaseFilterBackend):
@@ -29,6 +30,31 @@ class PlaylistTrackFilter(BaseFilterBackend):
             filter_params["provider"] = provider
         if playlist_name:
             filter_params["playlist__name"] = playlist_name
+
+        queryset = queryset.filter(**filter_params)
+        return queryset
+
+
+class CreatedPlaylistFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        filter_params = {}
+        CreatedPlaylistDataSerializer(
+            data=request.query_params
+        ).is_valid(raise_exception=True)
+
+        name = request.query_params.get("name")
+        status = request.query_params.get("status")
+        playlist_id = request.query_params.get("playlist_id")
+        provider = request.query_params.get("provider")
+
+        if name:
+            filter_params["name__icontains"] = name
+        if status:
+            filter_params["status"] = status
+        if playlist_id:
+            filter_params["remote_id"] = playlist_id
+        if provider:
+            filter_params["provider"] = provider
 
         queryset = queryset.filter(**filter_params)
         return queryset

@@ -2,14 +2,14 @@ from rest_framework import serializers
 
 from musicwire.core.exceptions import ValidationError
 from musicwire.core.serializers import BaseSerializer
-from musicwire.music.models import Playlist, PlaylistTrack
+from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
 from musicwire.provider.models import Provider
 
 
 class PlaylistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Playlist
-        fields = ("name", "status", "remote_id", "content", "provider", "is_transferred")
+        fields = "name", "status", "remote_id", "content", "provider", "is_transferred"
 
 
 class PulledPlaylistSerializer(serializers.Serializer):
@@ -19,8 +19,7 @@ class PulledPlaylistSerializer(serializers.Serializer):
 class TrackSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlaylistTrack
-        fields = ("name", "artist", "album", "remote_id", "is_transferred",
-                  "provider")
+        fields = "name", "artist", "album", "remote_id", "is_transferred", "provider"
 
     def to_representation(self, instance):
         data = super(TrackSerializer, self).to_representation(instance)
@@ -57,6 +56,19 @@ class CreatePlaylistSerializer(BaseSerializer, serializers.Serializer):
         if val == Provider.SPOTIFY and user_id is None:
             raise ValidationError('user_id is required for Spotify.')
         return val
+
+
+class CreatedPlaylistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CreatedPlaylist
+        fields = "name", "status", "remote_id", "provider"
+
+
+class CreatedPlaylistDataSerializer(BaseSerializer, serializers.Serializer):
+    name = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
+    playlist_id = serializers.CharField(required=False)
+    provider = serializers.CharField(required=False)
 
 
 class AddPlaylistTrackSerializer(BaseSerializer, serializers.Serializer):

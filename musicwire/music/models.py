@@ -26,7 +26,7 @@ class Playlist(models.Model):
 
 
 class PlaylistTrack(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=255)
     artist = models.CharField(max_length=128, null=True)
     album = models.CharField(max_length=128, null=True)
     playlist = models.ForeignKey(Playlist, on_delete=models.SET_NULL, null=True)
@@ -40,9 +40,20 @@ class PlaylistTrack(models.Model):
 
 
 class SearchErrorTracks(models.Model):
-    name = models.CharField(max_length=256)
-    response = models.CharField(max_length=256)
+    name = models.CharField(max_length=255)
+    response = models.CharField(max_length=255)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class CreatedPlaylist(models.Model):
+    name = models.CharField(max_length=255)
+    status = models.CharField(max_length=12, choices=Playlist.STATUS)
+    remote_id = models.CharField(max_length=255)
+    provider = models.CharField(max_length=64, choices=Provider.PROVIDERS)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return self.name

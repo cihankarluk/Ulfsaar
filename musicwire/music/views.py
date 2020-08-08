@@ -6,13 +6,14 @@ from rest_framework.views import APIView
 
 from musicwire.core.exceptions import AllTracksAlreadyProcessed, \
     AllPlaylistsAlreadyProcessed
-from musicwire.music.filters import PlaylistTrackFilter
-from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
+from musicwire.music.filters import PlaylistTrackFilter, CreatedPlaylistFilter
+from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks, \
+    CreatedPlaylist
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
     AddPlaylistTrackSerializer, SearchSerializer, \
-    PulledPlaylistSerializer, PulledTrackSerializer
+    PulledPlaylistSerializer, PulledTrackSerializer, CreatedPlaylistSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -100,29 +101,28 @@ class PlaylistTrackView(generics.ListAPIView):
         return Response(serialized.data, status=200)
 
 
-class CreatePlaylistView(APIView):
-    # TODO: may add model to view for created playlists.
-    serializer_class = CreatePlaylistSerializer
+class CreatePlaylistView(generics.ListAPIView):
+    serializer_class = CreatedPlaylistSerializer
+    filter_backends = [CreatedPlaylistFilter]
+
+    def get_queryset(self):
+        created_playlists = CreatedPlaylist.objects.filter(
+            user=self.request.account
+        )
+        return created_playlists
 
     def post(self, request, *args, **kwargs):
-        serialized = self.serializer_class(data=self.request.data)
+        serialized = CreatePlaylistSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
-        end = valid_data['end']
-        adapter = Provider.get_provider(end, valid_data['end_token'])
+        adapter = Provider.get_provider(
+            provider=valid_data["end"],
+            token=valid_data['end_token'],
+            user=request.account
+        )
 
-        request_data = {
-            "playlist_name": valid_data["playlist_name"],
-            "privacy_status": valid_data.get("privacy_status"),
-            "collaborative": valid_data.get("collaborative"),
-            "description": valid_data.get("description"),
-        }
-
-        if end == Provider.SPOTIFY:
-            request_data["user_id"] = valid_data["user_id"]
-
-        playlist = adapter.create_playlist(request_data)
+        playlist = adapter.create_playlist(valid_data)
 
         return Response(playlist, status=200)
 

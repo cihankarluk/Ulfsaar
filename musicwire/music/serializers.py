@@ -27,10 +27,6 @@ class TrackSerializer(serializers.ModelSerializer):
         return data
 
 
-class PulledTrackSerializer(serializers.Serializer):
-    tracks = TrackSerializer(many=True)
-
-
 class PlaylistPostSerializer(BaseSerializer, serializers.Serializer):
     source = serializers.CharField()
     source_token = serializers.CharField()

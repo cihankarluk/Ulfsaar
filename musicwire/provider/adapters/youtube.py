@@ -2,20 +2,25 @@ import logging
 import re
 from typing import List
 
+from musicwire.core.exceptions import ProviderResponseError
+from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.youtube import Client
+from musicwire.provider.datastructures import ClientResult
+from musicwire.provider.models import Provider
 
 logger = logging.getLogger(__name__)
 
 
 class Adapter(BaseAdapter):
-    def __init__(self, token):
+    def __init__(self, token, user):
         req_data = {
             'base_url': "https://www.googleapis.com/youtube/v3/",
             "token": token
         }
         self.youtube_client = Client(**req_data)
         self.part = 'snippet, status, contentDetails'
+        self.user = user
 
     @staticmethod
     def simplify_track_title(title: str):
@@ -25,34 +30,44 @@ class Adapter(BaseAdapter):
         title = re.sub(strings_to_remove, "", title)
         return title
 
+    @staticmethod
+    def validate_response(response: ClientResult):
+        if response.error:
+            raise ProviderResponseError(response.error_msg)
+        return response.result
+
     def playlists(self):
         """
         Get playlists of user.
         """
-        user_playlists = []
-
-        request_data = {
+        params = {
             'part': self.part,
             'mine': True
         }
 
-        playlists = self.youtube_client.get_playlists(**request_data)
+        response = self.youtube_client.get_playlists(params=params)
+        playlists = self.validate_response(response)
 
-        for playlist in playlists['items']:
-            playlist_data = {
-                'playlist_id': playlist['id'],
-                'playlist_name': playlist['snippet']['title'],
-                'playlist_status': playlist['status']['privacyStatus'],
-                'playlist_content': playlist['contentDetails']['itemCount']
-            }
-            user_playlists.append(playlist_data)
-        return user_playlists
+        db_playlist = self.get_db_playlists(self.user)
 
-    def playlist_tracks(self, playlist_id: str, limit=50, paging=None):
+        objs = [Playlist(
+            name=playlist['snippet']['title'],
+            status=playlist['status']['privacyStatus'],
+            remote_id=playlist['id'],
+            content=playlist['contentDetails']['itemCount'],
+            provider=Provider.YOUTUBE,
+            user=self.user
+        ) for playlist in playlists['items'] if playlist['id'] not in db_playlist]
+
+        Playlist.objects.bulk_create(objs)
+
+        return objs
+
+    def playlist_tracks(self, playlist_id: str, limit=50, paging=None) -> List[object]:
         """
         Get playlist's tracks.
         """
-        user_tracks = []
+        finished_tracks = []
 
         params = {
             'maxResults': limit,
@@ -61,71 +76,73 @@ class Adapter(BaseAdapter):
             'pageToken': paging
         }
 
+        playlist = self.get_db_playlist(playlist_id=playlist_id, user=self.user)
+        db_tracks = self.get_db_tracks(user=self.user)
+
         while True:
             # Cannot be done with async or threads due to google turns each page
             # with page token
-            tracks = self.youtube_client.get_playlist_tracks(**params)
+            response = self.youtube_client.get_playlist_tracks(params=params)
 
-            for track in tracks['items']:
-                track_data = {
-                    'track_id': track['id'],
-                    'track_album_name': None,
-                    'track_name': self.simplify_track_title(track['snippet']['title']),
-                    'track_artist': None,
-                }
-                user_tracks.append(track_data)
+            tracks = self.validate_response(response)
+
+            objs = [PlaylistTrack(
+                name=self.simplify_track_title(track['snippet']['title']),
+                artist=None,
+                remote_id=track["snippet"]["resourceId"]["videoId"],
+                album=None,
+                playlist=playlist,
+                provider=Provider.YOUTUBE,
+                user=self.user
+            ) for track in tracks['items'] if track['id'] not in db_tracks]
+            PlaylistTrack.objects.bulk_create(objs)
+            finished_tracks.append(objs)
+
             next_page_token = tracks.get('nextPageToken')
 
             if not next_page_token:
                 break
+
             params['pageToken'] = next_page_token
-        return user_tracks
+
+        return finished_tracks
 
     def create_playlists_selection(self):
         # TODO: need to write this part to give chose option for user to which playlists
         #  will be added.
         raise NotImplemented()
 
-    def create_playlist(self, playlists: list) -> List[dict]:
+    def create_playlist(self, playlist_data: dict) -> dict:
         """
         Post a new playlists in user account. Max create playlist limit is set to
          10 per day.
         """
-        created_playlists = []
         params = {'part': self.part}
 
-        if len(playlists) > 10:
-            logger.info(f"Only 10 playlists will be inserted due "
-                        f"to google block more then 10 playlist insertion per day. "
-                        f"Playlists to be added are: {playlists[:10]}")
-
-        for playlist in playlists[:10]:
-            privacy_status: bool = playlist.get('privacy_status')
-            request_data = {
-                "snippet": {
-                    "title": playlist['playlist_name'],
-                    "description": playlist.get('description')
-                },
-                "status": {
-                    "privacyStatus": 'public' if privacy_status else 'private'
-                }
+        privacy_status = playlist_data.get('privacy_status')
+        request_data = {
+            "snippet": {
+                "title": playlist_data['playlist_name'],
+                "description": playlist_data.get('description')
+            },
+            "status": {
+                "privacyStatus": privacy_status
             }
+        }
 
-            playlist_data = self.youtube_client.create_a_playlist(params, request_data)
+        response = self.youtube_client.create_a_playlist(params, request_data)
+        playlist_data = self.validate_response(response)
 
-            try:
-                created_playlists.append({
-                    "playlist_id": playlist_data['id'],
-                    "playlist_collaborative": None,
-                    "playlist_description": playlist_data['snippet']['description'],
-                    "playlist_name": playlist_data['snippet']['title'],
-                    "playlist_status": playlist_data['status']['privacyStatus']
-                })
-                logger.info(f"Created: {playlist['playlist_name']}.")
-            except TypeError:
-                logger.info(f"Fail to create: {playlist['playlist_name']}.")
+        created_playlist = {
+            "name": playlist_data['snippet']['title'],
+            "status": playlist_data['status']['privacyStatus'],
+            "remote_id": playlist_data['id'],
+            "provider": Provider.YOUTUBE,
+            "user": self.user
+        }
+        CreatedPlaylist.objects.create(**created_playlist)
 
-        return created_playlists
+        return created_playlist
 
     def add_track_to_playlist(self, playlist_id: str, track_id: str):
         """
@@ -144,11 +161,12 @@ class Adapter(BaseAdapter):
             }
         }
 
-        self.youtube_client.add_tracks_to_playlist(
+        response = self.youtube_client.add_tracks_to_playlist(
             params=params, request_data=request_data
         )
+        self.validate_response(response)
 
-        return
+        return response
 
     def search(self, search_track: str, search_type: str = None) -> dict:
         """
@@ -160,7 +178,8 @@ class Adapter(BaseAdapter):
             'q': search_track,
         }
 
-        search_result = self.youtube_client.search(params)
+        response = self.youtube_client.search(params)
+        search_result = self.validate_response(response)
 
         try:
             search_response = {
@@ -170,5 +189,10 @@ class Adapter(BaseAdapter):
             }
         except (KeyError, TypeError):
             search_response = {}
+            self.create_search_error(
+                search_track=search_track,
+                search_result=search_result,
+                user=self.user
+            )
 
         return search_response

@@ -1,5 +1,10 @@
 import abc
-from typing import List
+import logging
+from typing import List, Optional
+
+from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAdapter(metaclass=abc.ABCMeta):
@@ -23,3 +28,37 @@ class BaseAdapter(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def search(self, search_track: str, search_type: str) -> List[dict]:
         raise NotImplemented()
+
+    @staticmethod
+    def get_db_playlist(playlist_id: str, user: object) -> Optional[object]:
+        try:
+            playlist = Playlist.objects.get(remote_id=playlist_id, user=user)
+        except Playlist.DoesNotExist:
+            playlist = None
+            logger.info('Playlist does not exist for this user.')
+
+        return playlist
+
+    @staticmethod
+    def get_db_tracks(user: object) -> list:
+        db_tracks = PlaylistTrack.objects.filter(
+            user=user
+        ).values_list('remote_id', flat=True)
+
+        return db_tracks
+
+    @staticmethod
+    def get_db_playlists(user: object) -> list:
+        db_playlists = Playlist.objects.filter(
+            user=user
+        ).values_list('remote_id', flat=True)
+
+        return db_playlists
+
+    @staticmethod
+    def create_search_error(search_track: str, search_result, user: object):
+        SearchErrorTracks.objects.create(
+            name=search_track,
+            response=search_result,
+            user=user
+        )

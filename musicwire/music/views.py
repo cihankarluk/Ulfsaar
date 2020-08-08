@@ -1,4 +1,5 @@
 import logging
+import itertools
 
 from rest_framework import generics
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
     PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
     AddPlaylistTrackSerializer, SearchSerializer, \
-    PulledPlaylistSerializer, PulledTrackSerializer, CreatedPlaylistSerializer
+    PulledPlaylistSerializer, CreatedPlaylistSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,8 @@ class PlaylistTrackView(generics.ListAPIView):
                 "All tracks on this playlist already processed."
             )
 
-        serialized = PulledTrackSerializer({"tracks": tracks})
+        merged = list(itertools.chain(*tracks))
+        serialized = TrackSerializer(merged, many=True)
         return Response(serialized.data, status=200)
 
 
@@ -135,7 +137,11 @@ class AddTrackToPlaylistView(APIView):
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
-        adapter = Provider.get_provider(valid_data['end'], valid_data['end_token'])
+        adapter = Provider.get_provider(
+            provider=valid_data['end'],
+            token=valid_data['end_token'],
+            user=request.account
+        )
         adapter.add_track_to_playlist(valid_data['playlist_id'], valid_data['track_id'])
 
         return Response(status=201)
@@ -145,6 +151,7 @@ class SearchView(generics.ListAPIView):
     serializer_class = SearchSerializer
 
     def get_queryset(self):
+        """Get search errors which are not find."""
         return SearchErrorTracks.objects.filter(user=self.request.account)
 
     def post(self, request, *args, **kwargs):
@@ -152,7 +159,11 @@ class SearchView(generics.ListAPIView):
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 
-        adapter = Provider.get_provider(valid_data['source'], valid_data['source_token'])
+        adapter = Provider.get_provider(
+            provider=valid_data['source'],
+            token=valid_data['source_token'],
+            user=request.account
+        )
         response = adapter.search(valid_data['track_name'])
 
         return Response(response, status=200)

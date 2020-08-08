@@ -84,15 +84,8 @@ class Adapter(BaseAdapter):
     def get_tracks(self, tracks: List[dict], playlist_id: str) -> List[object]:
         finished_tracks = []
 
-        try:
-            playlist = Playlist.objects.get(remote_id=playlist_id, user=self.user)
-        except Playlist.DoesNotExist:
-            playlist = None
-            logger.info('Playlist does not exist for this user.')
-
-        db_tracks = PlaylistTrack.objects.filter(
-            user=self.user
-        ).values_list('remote_id', flat=True)
+        playlist = self.get_db_playlist(playlist_id=playlist_id, user=self.user)
+        db_tracks = self.get_db_tracks(user=self.user)
 
         for item in tracks:
             objs = [PlaylistTrack(
@@ -132,9 +125,7 @@ class Adapter(BaseAdapter):
         for response in responses:
             playlists.append(self.validate_response(response))
 
-        db_playlist = Playlist.objects.filter(
-            user=self.user
-        ).values_list('remote_id', flat=True)
+        db_playlist = self.get_db_playlists(self.user)
 
         # TODO: check if first loop necessary
         for item in playlists:
@@ -206,7 +197,7 @@ class Adapter(BaseAdapter):
         created_playlist = {
             "name": playlist_data['name'],
             "status": self.status_control(playlist_data),
-            "remote_id": playlist_data['uri'],
+            "remote_id": playlist_data['id'],
             "provider": Provider.SPOTIFY,
             "user": self.user
         }
@@ -224,9 +215,6 @@ class Adapter(BaseAdapter):
             playlist_id, request_data
         )
         self.validate_response(response)
-
-        if not response:  # TODO: Need to control if this control required
-            logger.info(f"Spotify insert track fail: {track_id}")
 
         return response
 
@@ -258,5 +246,10 @@ class Adapter(BaseAdapter):
             }
         except (KeyError, TypeError):
             search_response = {}
+            self.create_search_error(
+                search_track=search_track,
+                search_result=search_result,
+                user=self.user
+            )
 
         return search_response

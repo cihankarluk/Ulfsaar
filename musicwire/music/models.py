@@ -41,7 +41,7 @@ class PlaylistTrack(models.Model):
 
 class SearchErrorTracks(models.Model):
     name = models.CharField(max_length=255)
-    response = models.CharField(max_length=255)
+    response = models.TextField(max_length=255)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):

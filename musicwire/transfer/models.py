@@ -1,37 +1,25 @@
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 
-from musicwire.music.models import Playlist
+from musicwire.account.models import UserProfile
 from musicwire.provider.models import Provider
 
 
-class TransferredPlaylists(models.Model):
-    SUCCESS = "success"
-    FAILED = "failed"
+class TransferError(models.Model):
+    PLAYLIST = "playlist"
+    TRACK = "track"
 
-    TRANSFER_STATUSES = (
-        (SUCCESS, 'success'),
-        (FAILED, 'failed')
+    TYPE = (
+        (PLAYLIST, "playlist"),
+        (TRACK, "track")
     )
 
-    name = models.CharField(max_length=255)
-    status = models.CharField(max_length=12, choices=Playlist.STATUS)
-    remote_id = models.CharField(max_length=64)
-    content = models.CharField(max_length=64, null=True)
-    source = models.CharField(max_length=64, choices=Provider.PROVIDERS, null=True)
-    end = models.CharField(max_length=64, choices=Provider.PROVIDERS)
-    transfer_status = models.CharField(max_length=12, choices=TRANSFER_STATUSES)
-
-    def __str__(self):
-        return f"{self.name}/{self.source}->{self.end}"
-
-
-class TransferredTracks(models.Model):
-    name = models.CharField(max_length=255)
-    transferred_playlist = models.ForeignKey(TransferredPlaylists, on_delete=models.SET_NULL, null=True)
-    remote_id = models.CharField(max_length=255)
+    request_data = JSONField()
+    error = models.TextField()
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True)
     source = models.CharField(max_length=64, choices=Provider.PROVIDERS)
     end = models.CharField(max_length=64, choices=Provider.PROVIDERS)
-    transfer_status = models.CharField(max_length=12, choices=TransferredPlaylists.TRANSFER_STATUSES)
+    type = models.CharField(max_length=64, choices=TYPE)
 
     def __str__(self):
-        return f"{self.name}/{self.source}->{self.end}"
+        return f"{self.source} -> {self.end}/{self.type}"

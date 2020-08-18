@@ -119,14 +119,13 @@ class Adapter(BaseAdapter):
         """
         params = {'part': self.part}
 
-        privacy_status = playlist_data.get('privacy_status')
         request_data = {
             "snippet": {
                 "title": playlist_data['playlist_name'],
                 "description": playlist_data.get('description')
             },
             "status": {
-                "privacyStatus": privacy_status
+                "privacyStatus": playlist_data.get('privacy_status')
             }
         }
 
@@ -188,11 +187,11 @@ class Adapter(BaseAdapter):
                 'type': None,
             }
         except (KeyError, TypeError):
-            search_response = {}
             self.create_search_error(
                 search_track=search_track,
                 search_result=search_result,
                 user=self.user
             )
+            raise ProviderResponseError(f"{search_track} not found.")
 
         return search_response

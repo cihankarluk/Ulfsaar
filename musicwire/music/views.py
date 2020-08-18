@@ -52,7 +52,8 @@ class PlaylistView(generics.ListAPIView):
                         remote_id=adapter.saved_tracks_id,
                         content=None,
                         provider=Provider.SPOTIFY,
-                        user=request.account)
+                        user=request.account
+                )
                 saved_tracks_playlist.save()
                 playlists.append(saved_tracks_playlist)
 

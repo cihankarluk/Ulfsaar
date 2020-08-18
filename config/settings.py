@@ -216,3 +216,6 @@ ELASTIC_APM = {
   # Set custom APM Server URL (default: http://localhost:8200)
   'SERVER_URL': '',
 }
+
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")

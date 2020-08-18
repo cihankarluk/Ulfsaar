@@ -187,7 +187,6 @@ class Adapter(BaseAdapter):
         request_data = {
             "name": playlist_data['playlist_name'],
             "public": playlist_data.get('privacy_status'),
-            "collaborative": playlist_data.get('collaborative'),
             "description": playlist_data.get('description')
         }
 

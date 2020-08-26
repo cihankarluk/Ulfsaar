@@ -39,7 +39,7 @@ class UserAuthenticationMiddleware(MiddlewareMixin):
         except UserProfile.DoesNotExist:
             user = None
 
-        if not user:
+        if not user and check_url:
             return self.display_error_message(
                 'Authentication Failed'
             )

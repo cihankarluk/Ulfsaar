@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from musicwire.core.exceptions import (AllPlaylistsAlreadyProcessed,
                                        AllTracksAlreadyProcessed)
-from musicwire.music.filters import CreatedPlaylistFilter, PlaylistTrackFilter
+from musicwire.music.filters import CreatedPlaylistFilter, PlaylistTrackFilter, \
+    PlaylistFilter
 from musicwire.music.models import (CreatedPlaylist, Playlist, PlaylistTrack,
                                     SearchErrorTrack)
 from musicwire.music.serializers import (AddPlaylistTrackSerializer,
@@ -25,12 +26,16 @@ logger = logging.getLogger(__name__)
 
 class PlaylistView(generics.ListAPIView):
     serializer_class = PlaylistSerializer
+    filter_backends = [PlaylistFilter]
 
     def get_queryset(self):
         playlists = Playlist.objects.filter(user=self.request.account)
         return playlists
 
     def post(self, request, *args, **kwargs):
+        """
+        This method go to given provider and pull all playlists in given provider.
+        """
         serialized = PlaylistPostSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data

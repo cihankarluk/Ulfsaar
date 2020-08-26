@@ -44,11 +44,6 @@ class UserAuthenticationMiddleware(MiddlewareMixin):
                 'Authentication Failed'
             )
 
-        if check_url:
-            return self.display_error_message(
-                'The API key does not have permission on this endpoint.'
-            )
-
         post_conditions = all([
             request_method == 'POST',
             content_type != 'application/json',

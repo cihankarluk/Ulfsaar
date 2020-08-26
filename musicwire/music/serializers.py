@@ -87,3 +87,12 @@ class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):
     is_transferred = serializers.BooleanField(required=False)
     provider = serializers.CharField(required=False)
     playlist_name = serializers.CharField(required=False)
+
+
+class PlaylistFilterSerializer(BaseSerializer, serializers.Serializer):
+    name = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
+    remote_id = serializers.CharField(required=False)
+    content = serializers.IntegerField(required=False)
+    provider = serializers.CharField(required=False)
+    is_transferred = serializers.CharField(required=False)

@@ -19,11 +19,11 @@ def exempt_url_check(path):
 
 class UserAuthenticationMiddleware(MiddlewareMixin):
     @staticmethod
-    def display_error_message(msg, **kwargs):
+    def display_error_message(msg=None, **kwargs):
         data = {
             'status_code': status.HTTP_401_UNAUTHORIZED,
             'code': 'AUTHENTICATION_FAIL',
-            'error_message': 'Authentication Failed'
+            'error_message': msg
         }
         return JsonResponse(data, status=401)
 
@@ -40,9 +40,15 @@ class UserAuthenticationMiddleware(MiddlewareMixin):
         except UserProfile.DoesNotExist:
             user = None
 
-        if not user and check_url:
+        if not user:
             return self.display_error_message(
-                'The API key does not have permission on this endpoint.')
+                'Authentication Failed'
+            )
+
+        if check_url:
+            return self.display_error_message(
+                'The API key does not have permission on this endpoint.'
+            )
 
         post_conditions = all([
             request_method == 'POST',
@@ -51,9 +57,7 @@ class UserAuthenticationMiddleware(MiddlewareMixin):
 
         if post_conditions:
             return self.display_error_message(
-                'Not valid Content-Type',
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                status_text='Unsupported Media Type'
+                'Not valid Content-Type'
             )
 
         setattr(request, 'account', user)

@@ -1,6 +1,5 @@
 import json
 import urllib.parse
-
 from abc import abstractmethod
 
 import requests

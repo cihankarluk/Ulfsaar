@@ -3,8 +3,8 @@ from concurrent.futures import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Callable, Iterable, List, Optional
 
-from musicwire.core.exceptions import ValidationError, ProviderResponseError
-from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
+from musicwire.core.exceptions import ProviderResponseError, ValidationError
+from musicwire.music.models import CreatedPlaylist, Playlist, PlaylistTrack
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.spotify import Client
 from musicwire.provider.datastructures import ClientResult

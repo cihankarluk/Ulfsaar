@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
-
 from rest_framework import status
 
 from musicwire.account.models import UserProfile

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from musicwire.core.exceptions import ValidationError
 from musicwire.core.serializers import BaseSerializer
-from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
+from musicwire.music.models import CreatedPlaylist, Playlist, PlaylistTrack
 from musicwire.provider.models import Provider
 
 

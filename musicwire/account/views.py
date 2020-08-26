@@ -1,9 +1,10 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from musicwire.core.exceptions import UsernameAlreadyExists, UserSignInFail
 from musicwire.account.models import UserProfile
-from musicwire.account.serializers import UserCreateSerializer, UserSignInSerializer
+from musicwire.account.serializers import (UserCreateSerializer,
+                                           UserSignInSerializer)
+from musicwire.core.exceptions import UsernameAlreadyExists, UserSignInFail
 
 
 class UserSignUp(APIView):

@@ -1,20 +1,24 @@
-import logging
 import itertools
+import logging
 
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from musicwire.core.exceptions import AllTracksAlreadyProcessed, \
-    AllPlaylistsAlreadyProcessed
-from musicwire.music.filters import PlaylistTrackFilter, CreatedPlaylistFilter
-from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTrack, \
-    CreatedPlaylist
+from musicwire.core.exceptions import (AllPlaylistsAlreadyProcessed,
+                                       AllTracksAlreadyProcessed)
+from musicwire.music.filters import CreatedPlaylistFilter, PlaylistTrackFilter
+from musicwire.music.models import (CreatedPlaylist, Playlist, PlaylistTrack,
+                                    SearchErrorTrack)
+from musicwire.music.serializers import (AddPlaylistTrackSerializer,
+                                         CreatedPlaylistSerializer,
+                                         CreatePlaylistSerializer,
+                                         PlaylistPostSerializer,
+                                         PlaylistSerializer,
+                                         PulledPlaylistSerializer,
+                                         SearchSerializer, TrackPostSerializer,
+                                         TrackSerializer)
 from musicwire.provider.models import Provider
-from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
-    PlaylistSerializer, TrackSerializer, CreatePlaylistSerializer, \
-    AddPlaylistTrackSerializer, SearchSerializer, \
-    PulledPlaylistSerializer, CreatedPlaylistSerializer
 
 logger = logging.getLogger(__name__)
 

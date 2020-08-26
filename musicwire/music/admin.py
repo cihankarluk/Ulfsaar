@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from musicwire.music.models import PlaylistTrack, Playlist, SearchErrorTrack, \
-    CreatedPlaylist
+from musicwire.music.models import (CreatedPlaylist, Playlist, PlaylistTrack,
+                                    SearchErrorTrack)
 
 
 class PlaylistModelAdmin(admin.ModelAdmin):

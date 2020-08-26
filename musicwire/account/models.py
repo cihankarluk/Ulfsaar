@@ -1,5 +1,6 @@
-from musicwire.core.helpers import generate_uniq_id
 from django.db import models
+
+from musicwire.core.helpers import generate_uniq_id
 
 
 class UserProfile(models.Model):

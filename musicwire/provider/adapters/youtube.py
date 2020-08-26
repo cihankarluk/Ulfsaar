@@ -3,7 +3,7 @@ import re
 from typing import List
 
 from musicwire.core.exceptions import ProviderResponseError
-from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
+from musicwire.music.models import CreatedPlaylist, Playlist, PlaylistTrack
 from musicwire.provider.adapters.base import BaseAdapter
 from musicwire.provider.clients.youtube import Client
 from musicwire.provider.datastructures import ClientResult

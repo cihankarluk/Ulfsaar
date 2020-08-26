@@ -4,7 +4,7 @@ from celery.schedules import crontab
 from celery.task import periodic_task
 
 from musicwire.core.exceptions import ProviderResponseError
-from musicwire.music.models import Playlist, CreatedPlaylist
+from musicwire.music.models import CreatedPlaylist, Playlist
 from musicwire.provider.models import Provider
 from musicwire.transfer.models import TransferError
 

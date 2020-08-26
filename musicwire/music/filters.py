@@ -1,7 +1,7 @@
 from rest_framework.filters import BaseFilterBackend
 
-from musicwire.music.serializers import PlaylistTrackFilterSerializer, \
-    CreatedPlaylistDataSerializer
+from musicwire.music.serializers import (CreatedPlaylistDataSerializer,
+                                         PlaylistTrackFilterSerializer)
 
 
 class PlaylistTrackFilter(BaseFilterBackend):

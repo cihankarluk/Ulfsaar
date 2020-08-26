@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from musicwire.core.exceptions import AllTracksAlreadyProcessed, \
     AllPlaylistsAlreadyProcessed
 from musicwire.music.filters import PlaylistTrackFilter, CreatedPlaylistFilter
-from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks, \
+from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTrack, \
     CreatedPlaylist
 from musicwire.provider.models import Provider
 from musicwire.music.serializers import PlaylistPostSerializer, TrackPostSerializer, \
@@ -153,7 +153,7 @@ class SearchView(generics.ListAPIView):
 
     def get_queryset(self):
         """Get search errors which are not find."""
-        return SearchErrorTracks.objects.filter(user=self.request.account)
+        return SearchErrorTrack.objects.filter(user=self.request.account)
 
     def post(self, request, *args, **kwargs):
         serialized = self.serializer_class(data=self.request.data)

@@ -147,7 +147,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
-EXEMPT_URLS = ['/user/signup', '/user/signin']
+EXEMPT_URLS = ['/admin/', '/user/signup', '/user/signin']
 
 RAVEN_CONFIG = {
     'dns': os.getenv("RAVEN_DNS")

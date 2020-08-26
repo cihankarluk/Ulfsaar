@@ -187,11 +187,12 @@ class Adapter(BaseAdapter):
                 'type': None,
             }
         except (KeyError, TypeError):
+            search_response = {}
             self.create_search_error(
                 search_track=search_track,
                 search_result=search_result,
+                provider=Provider.YOUTUBE,
                 user=self.user
             )
-            raise ProviderResponseError(f"{search_track} not found.")
 
         return search_response

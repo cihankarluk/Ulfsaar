@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -12,15 +11,13 @@ from musicwire.transfer.models import TransferError
 logger = logging.getLogger(__name__)
 
 
-@periodic_task(run_every=(crontab(hour=15, minute=55)))
+@periodic_task(run_every=(crontab(hour=0, minute=0)))
 def transfer_playlists_task(source_slug, source_token, end_slug, end_token, user):
     adapter = Provider.get_provider(
         provider=source_slug,
         token=source_token,
         user=user
     )
-    import ipdb
-    ipdb.set_trace()
     # Create all playlists in database
     adapter.playlists()
     if source_slug == Provider.SPOTIFY:

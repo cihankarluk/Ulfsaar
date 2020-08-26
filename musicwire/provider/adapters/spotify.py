@@ -248,7 +248,8 @@ class Adapter(BaseAdapter):
             self.create_search_error(
                 search_track=search_track,
                 search_result=search_result,
-                user=self.user
+                user=self.user,
+                provider=Provider.SPOTIFY
             )
 
         return search_response

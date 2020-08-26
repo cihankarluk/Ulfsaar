@@ -2,7 +2,7 @@ import abc
 import logging
 from typing import List, Optional
 
-from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTracks
+from musicwire.music.models import Playlist, PlaylistTrack, SearchErrorTrack
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +56,10 @@ class BaseAdapter(metaclass=abc.ABCMeta):
         return db_playlists
 
     @staticmethod
-    def create_search_error(search_track: str, search_result, user: object):
-        SearchErrorTracks.objects.create(
+    def create_search_error(search_track: str, search_result, user: object, provider: str):
+        SearchErrorTrack.objects.create(
             name=search_track,
             response=search_result,
+            provider=provider,
             user=user
         )

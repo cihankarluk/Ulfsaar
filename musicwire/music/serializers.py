@@ -81,9 +81,11 @@ class SearchSerializer(BaseSerializer, serializers.Serializer):
 
 
 class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):
-    playlist_id = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
+    artist = serializers.CharField(required=False)
     album = serializers.CharField(required=False)
+    playlist_id = serializers.CharField(required=False)
+    remote_id = serializers.CharField(required=False)
     is_transferred = serializers.BooleanField(required=False)
     provider = serializers.CharField(required=False)
     playlist_name = serializers.CharField(required=False)

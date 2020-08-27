@@ -43,19 +43,25 @@ class PlaylistTrackFilter(BaseFilterBackend):
             data=request.query_params
         ).is_valid(raise_exception=True)
 
-        playlist_id = request.query_params.get("playlist_id")
         name = request.query_params.get("name")
+        artist = request.query_params.get("artist")
         album = request.query_params.get("album")
+        playlist_id = request.query_params.get("playlist_id")
+        remote_id = request.query_params.get("remote_id")
         is_transferred = request.query_params.get("is_transferred")
         provider = request.query_params.get("provider")
         playlist_name = request.query_params.get("playlist_name")
 
-        if playlist_id:
-            filter_params["playlist__remote_id"] = playlist_id
         if name:
             filter_params["name__icontains"] = name
+        if artist:
+            filter_params["artist__icontains"] = artist
         if album:
             filter_params["album__icontains"] = album
+        if playlist_id:
+            filter_params["playlist__remote_id"] = playlist_id
+        if remote_id:
+            filter_params["remote_id"] = remote_id
         if is_transferred:
             filter_params["is_transferred"] = is_transferred
         if provider:

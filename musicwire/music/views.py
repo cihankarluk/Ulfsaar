@@ -1,5 +1,6 @@
 import itertools
 import logging
+from typing import List
 
 from rest_framework import generics
 from rest_framework.response import Response
@@ -34,7 +35,7 @@ class PlaylistView(generics.ListAPIView):
 
     def post(self, request, *args, **kwargs):
         """
-        This method go to given provider and pull all playlists in given provider.
+        This method pull all playlists from provider.
         """
         serialized = PlaylistPostSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
@@ -86,6 +87,9 @@ class PlaylistTrackView(generics.ListAPIView):
         return tracks
 
     def post(self, request, *args, **kwargs):
+        """
+        This method pull all playlist tracks from provider for given playlist.
+        """
         serialized = TrackPostSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
@@ -98,16 +102,17 @@ class PlaylistTrackView(generics.ListAPIView):
             user=request.account
         )
 
-        if playlist_id == "spotify_saved_tracks":
-            tracks = adapter.saved_tracks(playlist_id=playlist_id)
+        if source == Provider.SPOTIFY and playlist_id == "spotify_saved_tracks":
+            tracks: List[list] = adapter.saved_tracks(playlist_id=playlist_id)
         else:
-            tracks = adapter.playlist_tracks(playlist_id=playlist_id)
+            tracks: List[list] = adapter.playlist_tracks(playlist_id=playlist_id)
 
         if not any(tracks):
             raise AllTracksAlreadyProcessed(
                 "All tracks on this playlist already processed."
             )
 
+        # We get list of lists. Due to this condition need to flatten that list.
         merged = list(itertools.chain(*tracks))
         serialized = TrackSerializer(merged, many=True)
         return Response(serialized.data, status=200)

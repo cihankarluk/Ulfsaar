@@ -417,6 +417,7 @@ class CreatePlaylistViewTestCase(TestCase):
 
         expected_result = {
             'count': 1,
+            # *
             'next': None,
             'previous': None,
             'results': [{'name': 'test_name_1',
@@ -517,3 +518,72 @@ class CreatePlaylistViewTestCase(TestCase):
             )
 
         p.assert_called_with(request_data)
+
+
+class AddTrackToPlaylistViewTestCase(TestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.url = reverse("add_track")
+        self.user1 = mommy.make(UserProfile, token='user1_token')
+        self.user2 = mommy.make(UserProfile, token='user2_token')
+        self.headers = {
+            "Content-Type": "application/json",
+            "HTTP_TOKEN": "user1_token"
+        }
+
+    def test_post_add_track_to_playlist_if_user_is_not_authenticated(self):
+        expected_result = {
+            'status_code': 401,
+            'code': 'AUTHENTICATION_FAIL',
+            'error_message': 'Authentication Failed'
+        }
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(expected_result, response.json())
+
+    def test_post_add_track_to_playlist_if_extra_parameter_in_request_data(self):
+        request_data = {
+            "end": "test_end",
+            "end_token": "test_end_token",
+            "playlist_id": "test_playlist_id",
+            "track_id": "test_track_id",
+            "test_parameter": "test_parameter"
+        }
+
+        expected_result = {
+            'status_code': 400,
+            'code': 'VALIDATION_ERROR',
+            'error_message': {
+                'non_field_errors': ["Got unknown fields: {'test_parameter'}"]
+            }
+        }
+
+        response = self.client.post(
+            self.url,
+            data=json.dumps(request_data),
+            content_type="application/json",
+            **self.headers
+        )
+
+        self.assertEqual(expected_result, response.json())
+
+    def test_post_add_track_to_playlist_if_user_is_authenticated(self):
+        request_data = {
+            "end": "spotify",
+            "end_token": "test_end_token",
+            "playlist_id": "test_playlist_id",
+            "track_id": "test_track_id",
+        }
+
+        patch_address = "musicwire.provider.adapters.spotify.Adapter.add_track_to_playlist"
+
+        with patch(patch_address) as p:
+            self.client.post(
+                self.url,
+                data=json.dumps(request_data),
+                content_type="application/json",
+                **self.headers
+            )
+
+        p.assert_called_with('test_playlist_id', 'test_track_id')

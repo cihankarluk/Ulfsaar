@@ -19,7 +19,7 @@ from musicwire.music.serializers import (AddPlaylistTrackSerializer,
                                          PlaylistSerializer,
                                          PulledPlaylistSerializer,
                                          SearchSerializer, TrackPostSerializer,
-                                         TrackSerializer)
+                                         TrackSerializer, SearchErrorSerializer)
 from musicwire.provider.models import Provider
 
 logger = logging.getLogger(__name__)
@@ -162,15 +162,15 @@ class AddTrackToPlaylistView(APIView):
         return Response(status=201)
 
 
-class SearchView(generics.ListAPIView):
-    serializer_class = SearchSerializer
+class SearchView(generics.ListCreateAPIView):
+    serializer_class = SearchErrorSerializer
+    queryset = SearchErrorTrack.objects.all()
 
     def get_queryset(self):
-        """Get search errors which are not find."""
-        return SearchErrorTrack.objects.filter(user=self.request.account)
+        return self.queryset.filter(user=self.request.account)
 
     def post(self, request, *args, **kwargs):
-        serialized = self.serializer_class(data=self.request.data)
+        serialized = SearchSerializer(data=self.request.data)
         serialized.is_valid(raise_exception=True)
         valid_data = serialized.validated_data
 

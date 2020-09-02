@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from musicwire.core.exceptions import ValidationError
 from musicwire.core.serializers import BaseSerializer
-from musicwire.music.models import CreatedPlaylist, Playlist, PlaylistTrack
+from musicwire.music.models import CreatedPlaylist, Playlist, PlaylistTrack, \
+    SearchErrorTrack
 from musicwire.provider.models import Provider
 
 
@@ -78,6 +79,12 @@ class SearchSerializer(BaseSerializer, serializers.Serializer):
     source = serializers.CharField()
     source_token = serializers.CharField()
     track_name = serializers.CharField()
+
+
+class SearchErrorSerializer(BaseSerializer, serializers.ModelSerializer):
+    class Meta:
+        model = SearchErrorTrack
+        fields = '__all__'
 
 
 class PlaylistTrackFilterSerializer(BaseSerializer, serializers.Serializer):

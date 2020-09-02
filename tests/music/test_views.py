@@ -7,7 +7,8 @@ from model_mommy import mommy
 from rest_framework.test import APIClient
 
 from musicwire.account.models import UserProfile
-from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist
+from musicwire.music.models import Playlist, PlaylistTrack, CreatedPlaylist, \
+    SearchErrorTrack
 
 
 class PlaylistViewTestCase(TestCase):
@@ -507,9 +508,8 @@ class CreatePlaylistViewTestCase(TestCase):
         }
 
         patch_address = "musicwire.provider.adapters.spotify.Adapter.create_playlist"
-        return_value = []
 
-        with patch(patch_address, return_value=return_value) as p:
+        with patch(patch_address, return_value=[]) as p:
             self.client.post(
                 self.url,
                 data=json.dumps(request_data),
@@ -587,3 +587,92 @@ class AddTrackToPlaylistViewTestCase(TestCase):
             )
 
         p.assert_called_with('test_playlist_id', 'test_track_id')
+
+
+class SearchViewTestCase(TestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.url = reverse("search")
+        self.user1 = mommy.make(UserProfile, token='user1_token')
+        self.user2 = mommy.make(UserProfile, token='user2_token')
+        self.headers = {
+            "Content-Type": "application/json",
+            "HTTP_TOKEN": "user1_token"
+        }
+
+    def test_get_search_errors_if_user_is_not_authenticated(self):
+        expected_result = {
+            'status_code': 401,
+            'code': 'AUTHENTICATION_FAIL',
+            'error_message': 'Authentication Failed'
+        }
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(expected_result, response.json())
+
+    def test_get_search_errors_if_user_is_authenticated(self):
+        mommy.make(SearchErrorTrack, user=self.user1)
+        mommy.make(SearchErrorTrack, user=self.user2)
+
+        response = self.client.get(
+            self.url,
+            **self.headers
+        )
+
+        self.assertEqual(1, response.json()['count'])
+
+    def test_post_search_if_user_is_not_authenticate(self):
+        expected_result = {
+            'status_code': 401,
+            'code': 'AUTHENTICATION_FAIL',
+            'error_message': 'Authentication Failed'
+        }
+
+        response = self.client.post(self.url)
+
+        self.assertEqual(expected_result, response.json())
+
+    def test_post_search_if_extra_parameter_in_request_data(self):
+        request_data = {
+            "source": "spotify",
+            "source_token": "test_source_token",
+            "track_name": "test_track_name",
+            "test_parameter": "test_parameter"
+        }
+
+        expected_result = {
+            'status_code': 400,
+            'code': 'VALIDATION_ERROR',
+            'error_message': {
+                'non_field_errors': ["Got unknown fields: {'test_parameter'}"]
+            }
+        }
+
+        response = self.client.post(
+            self.url,
+            data=json.dumps(request_data),
+            content_type="application/json",
+            **self.headers
+        )
+
+        self.assertEqual(expected_result, response.json())
+
+    def test_post_search_if_user_is_authenticated(self):
+        request_data = {
+            "source": "spotify",
+            "source_token": "test_source_token",
+            "track_name": "test_track_name",
+        }
+
+        patch_address = "musicwire.provider.adapters.spotify.Adapter.search"
+
+        with patch(patch_address, return_value={}) as p:
+            self.client.post(
+                self.url,
+                data=json.dumps(request_data),
+                content_type="application/json",
+                **self.headers
+            )
+
+        p.assert_called_with("test_track_name")

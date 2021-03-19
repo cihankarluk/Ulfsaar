@@ -7,7 +7,7 @@ decorator==4.4.1
 Django==2.2.13
 django-redis==4.8.0
 django-rest-framework==0.1.0
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 elastic-apm==4.2.2
 idna==2.8
 ipdb==0.12.2
